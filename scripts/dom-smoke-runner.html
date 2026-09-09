@@ -42,6 +42,10 @@
           await waitFor(() => page().querySelector("#main-content h1"), "Home did not render");
           assert(view().innerWidth === 390, "Mobile viewport width is not 390px");
           assert(page().documentElement.scrollWidth <= 390, "Home page has horizontal overflow");
+          const footerLogo = page().querySelector(".footer-brand img");
+          await waitFor(() => footerLogo.complete && footerLogo.naturalWidth > 0, "Footer logo did not load");
+          const footerLogoBox = footerLogo.getBoundingClientRect();
+          assert(Math.abs((footerLogoBox.width / footerLogoBox.height) - (259 / 154)) < 0.02, "Footer logo aspect ratio is distorted");
 
           page().querySelector('[data-language="zh-CN"]').click();
           await waitFor(() => page().documentElement.lang === "zh-Hans", "Simplified Chinese did not activate");
@@ -77,6 +81,7 @@
 
           await setRoute("#/contact", ".contact-details");
           assert(page().querySelectorAll(".contact-details").length === 3, "Contact cards are incomplete");
+          assert(new URL(page().querySelector(".map-section iframe").src).hostname === "www.google.com", "Google Maps embed URL is not using the allowed host");
           assert(page().querySelector('input[name="website"]'), "Form bot trap is missing");
           assert([...page().querySelectorAll('.inquiry-form input:not([name="website"]), .inquiry-form textarea')].every((field) => field.maxLength > 0), "Contact field limits are missing");
 

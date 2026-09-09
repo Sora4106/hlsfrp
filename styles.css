@@ -2146,7 +2146,11 @@ svg {
 }
 
 .footer-brand img {
-  width: 92px;
+  flex: 0 0 auto;
+  width: 132px;
+  height: auto;
+  aspect-ratio: 259 / 154;
+  object-fit: contain;
   border-radius: 4px;
 }
 

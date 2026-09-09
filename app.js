@@ -531,7 +531,7 @@
         </div>
       </section>
       <section class="map-section">
-        <iframe title="${copy("好利生高雄總公司地圖", "Map to Hou Li Sheng headquarters", "แผนที่สำนักงานใหญ่โฮ่ว ลี่ เซิง ที่เกาสง")}" src="https://maps.google.com/maps?q=%E9%AB%98%E9%9B%84%E5%B8%82%E5%A4%A7%E5%AF%AE%E5%8D%80%E5%A4%A7%E6%9C%89%E4%B8%80%E8%A1%9733%E8%99%9F&t=&z=14&ie=UTF8&iwloc=&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <iframe title="${copy("好利生高雄總公司地圖", "Map to Hou Li Sheng headquarters", "แผนที่สำนักงานใหญ่โฮ่ว ลี่ เซิง ที่เกาสง")}" src="https://www.google.com/maps/embed?origin=mfe&amp;pb=!1m3!2m1!1z6auY6ZuE5biC5a-u5Y2A5aSn5pyJ5LiA6KGXMzPomZ8!6i14" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
         <a class="map-card" href="https://maps.google.com/?q=%E9%AB%98%E9%9B%84%E5%B8%82%E5%A4%A7%E5%AF%AE%E5%8D%80%E5%A4%A7%E6%9C%89%E4%B8%80%E8%A1%9733%E8%99%9F" target="_blank" rel="noopener noreferrer">${icons.pin}<span><small>${copy("台灣總公司", "TAIWAN HEADQUARTERS", "สำนักงานใหญ่ไต้หวัน")}</small><strong>${esc(t(company.address))}</strong></span></a>
       </section>`;
   }
