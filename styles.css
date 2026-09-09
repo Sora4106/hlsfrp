@@ -297,7 +297,7 @@ svg {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 78px;
+  min-height: 94px;
 }
 
 .brand,
@@ -313,11 +313,12 @@ svg {
 .brand-mark {
   display: grid;
   place-items: center;
-  width: 62px;
-  height: 48px;
+  width: 88px;
+  height: 68px;
   overflow: hidden;
-  border-radius: 4px;
+  border-radius: 6px;
   background: var(--blue-700);
+  box-shadow: 0 8px 20px rgba(5, 103, 166, 0.16);
 }
 
 .brand-mark img {
@@ -333,7 +334,7 @@ svg {
 
 .brand-copy strong {
   color: var(--navy-900);
-  font-size: 1.05rem;
+  font-size: 1.12rem;
   letter-spacing: 0.05em;
 }
 
@@ -2051,7 +2052,7 @@ svg {
 }
 
 .footer-brand img {
-  width: 68px;
+  width: 92px;
   border-radius: 4px;
 }
 
@@ -2256,7 +2257,7 @@ svg {
   }
 
   .nav-inner {
-    min-height: 70px;
+    min-height: 80px;
   }
 
   .menu-toggle {
@@ -2293,7 +2294,7 @@ svg {
 
   .main-nav {
     position: absolute;
-    top: 104px;
+    top: 114px;
     right: 0;
     left: 0;
     display: grid;
@@ -2459,8 +2460,8 @@ svg {
 
 @media (max-width: 560px) {
   .brand-mark {
-    width: 52px;
-    height: 40px;
+    width: 66px;
+    height: 51px;
   }
 
   .brand-copy strong {
