@@ -81,7 +81,7 @@
 
           await setRoute("#/contact", ".contact-details");
           assert(page().querySelectorAll(".contact-details").length === 3, "Contact cards are incomplete");
-          assert(new URL(page().querySelector(".map-section iframe").src).hostname === "www.google.com", "Google Maps embed URL is not using the allowed host");
+          assert(new URL(page().querySelector(".map-section iframe").src).hostname === "www.openstreetmap.org", "Map embed URL is not using the allowed host");
           assert(page().querySelector('input[name="website"]'), "Form bot trap is missing");
           assert([...page().querySelectorAll('.inquiry-form input:not([name="website"]), .inquiry-form textarea')].every((field) => field.maxLength > 0), "Contact field limits are missing");
 
