@@ -1,0 +1,9 @@
+# Local migration evidence and browser captures
+research/
+old-sitemap.xml
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+
