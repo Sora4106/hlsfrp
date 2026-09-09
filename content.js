@@ -1,43 +1,49 @@
 (function () {
   "use strict";
 
-  const l = (zh, en) => ({ zh, en });
-  const asset = (name) => `public/assets/legacy/${name}`;
+  const l = window.HLSLocale.localized;
+  const h = window.HLSLocale.historical;
+  const asset = (name) => `public/assets/optimized/${name.replace(/\.[^.]+$/, ".webp")}`;
 
-  // The legacy site used the same heating article body for news entries 1–10.
-  // It is intentionally preserved here so no published content is silently lost.
-  const legacyHeatingBody = [
-    l(
+  const heatingBody = [
+    h(
       "在畜禽养殖生产过程中，冬季畜禽舍加热取暖已经成为保障生产成绩的必要条件。",
-      "In livestock production, heating animal housing in winter is essential for maintaining production performance."
+      "In livestock production, heating animal housing in winter is essential for maintaining production performance.",
+      "ในการผลิตปศุสัตว์ การให้ความอบอุ่นแก่โรงเรือนในฤดูหนาวเป็นปัจจัยสำคัญต่อประสิทธิภาพการผลิต"
     ),
-    l(
+    h(
       "在畜禽养殖生产过程中，冬季畜禽舍加热取暖已经成为保障生产成绩的必要条件。",
-      "In livestock production, heating animal housing in winter is essential for maintaining production performance."
+      "In livestock production, heating animal housing in winter is essential for maintaining production performance.",
+      "ในการผลิตปศุสัตว์ การให้ความอบอุ่นแก่โรงเรือนในฤดูหนาวเป็นปัจจัยสำคัญต่อประสิทธิภาพการผลิต"
     ),
-    l(
+    h(
       "传统的加热取暖模式包括热风炉取暖、锅炉取暖以及红外线灯取暖等。但随着国家政策变化（原则上不得新建10吨/时及以下的燃煤锅炉）以及饲料成本和人工成本的提高，传统的加热取暖模式已经不能满足生产需求，在这种情况下，一种高效、环保、节能的燃气加热器应运而生。",
-      "Traditional systems include hot-air furnaces, boilers and infrared lamps. Policy changes and rising feed and labor costs created demand for efficient, cleaner and energy-saving gas heaters."
+      "Traditional systems include hot-air furnaces, boilers and infrared lamps. Policy changes and rising feed and labor costs created demand for efficient, cleaner and energy-saving gas heaters.",
+      "ระบบแบบดั้งเดิมมีทั้งเตาลมร้อน หม้อไอน้ำ และหลอดอินฟราเรด การเปลี่ยนแปลงนโยบายรวมถึงต้นทุนอาหารสัตว์และแรงงานที่สูงขึ้น ทำให้เกิดความต้องการเครื่องทำความร้อนด้วยก๊าซที่มีประสิทธิภาพ สะอาด และประหยัดพลังงาน"
     ),
-    l(
+    h(
       "燃气加热器是一款以液化气、天然气或沼气为燃料，在畜禽舍内进行加热升温、干燥的新型加热设备。它的主要优点有：安全、高效、环保、自动化程度高、安装方便、简单易学。",
-      "Gas heaters use LPG, natural gas or biogas to heat and dry livestock buildings. Their advantages include safety, efficiency, environmental performance, automation and easy installation."
+      "Gas heaters use LPG, natural gas or biogas to heat and dry livestock buildings. Their advantages include safety, efficiency, environmental performance, automation and easy installation.",
+      "เครื่องทำความร้อนด้วยก๊าซใช้ LPG ก๊าซธรรมชาติ หรือก๊าซชีวภาพ เพื่อเพิ่มอุณหภูมิและลดความชื้นในโรงเรือน จุดเด่นคือปลอดภัย มีประสิทธิภาพ เป็นมิตรต่อสิ่งแวดล้อม ทำงานอัตโนมัติ และติดตั้งง่าย"
     ),
-    l(
+    h(
       "在畜禽养殖生产过程中，冬季畜禽舍加热取暖已经成为保障生产成绩的必要条件。",
-      "In livestock production, heating animal housing in winter is essential for maintaining production performance."
+      "In livestock production, heating animal housing in winter is essential for maintaining production performance.",
+      "ในการผลิตปศุสัตว์ การให้ความอบอุ่นแก่โรงเรือนในฤดูหนาวเป็นปัจจัยสำคัญต่อประสิทธิภาพการผลิต"
     ),
-    l(
+    h(
       "传统的加热取暖模式包括热风炉取暖、锅炉取暖以及红外线灯取暖等。但随着国家政策变化（原则上不得新建10吨/时及以下的燃煤锅炉）以及饲料成本和人工成本的提高，传统的加热取暖模式已经不能满足生产需求，在这种情况下，一种高效、环保、节能的燃气加热器应运而生。",
-      "Traditional systems include hot-air furnaces, boilers and infrared lamps. Policy changes and rising feed and labor costs created demand for efficient, cleaner and energy-saving gas heaters."
+      "Traditional systems include hot-air furnaces, boilers and infrared lamps. Policy changes and rising feed and labor costs created demand for efficient, cleaner and energy-saving gas heaters.",
+      "ระบบแบบดั้งเดิมมีทั้งเตาลมร้อน หม้อไอน้ำ และหลอดอินฟราเรด การเปลี่ยนแปลงนโยบายรวมถึงต้นทุนอาหารสัตว์และแรงงานที่สูงขึ้น ทำให้เกิดความต้องการเครื่องทำความร้อนด้วยก๊าซที่มีประสิทธิภาพ สะอาด และประหยัดพลังงาน"
     ),
-    l(
+    h(
       "燃气加热器是一款以液化气、天然气或沼气为燃料，在畜禽舍内进行加热升温、干燥的新型加热设备。它的主要优点有：安全、高效、环保、自动化程度高、安装方便、简单易学。",
-      "Gas heaters use LPG, natural gas or biogas to heat and dry livestock buildings. Their advantages include safety, efficiency, environmental performance, automation and easy installation."
+      "Gas heaters use LPG, natural gas or biogas to heat and dry livestock buildings. Their advantages include safety, efficiency, environmental performance, automation and easy installation.",
+      "เครื่องทำความร้อนด้วยก๊าซใช้ LPG ก๊าซธรรมชาติ หรือก๊าซชีวภาพ เพื่อเพิ่มอุณหภูมิและลดความชื้นในโรงเรือน จุดเด่นคือปลอดภัย มีประสิทธิภาพ เป็นมิตรต่อสิ่งแวดล้อม ทำงานอัตโนมัติ และติดตั้งง่าย"
     ),
   ];
 
-  const bulkFeedBody = [
+  const bulkFeedChinese = [
     "饲料是现代养殖业发展的物质基础，充足稳定、便捷高效、安全环保的饲料供给，对促进养殖业持续健康发展、保障动物性食品质量安全具有重要意义。为顺应畜牧业转型升级需要，推进饲料供给侧结构性改革，‘十三五’期间，农业部和各级畜牧饲料管理部门，将积极推进散装饲料与养殖场紧密连接，实现养殖业提质增效。近日，记者来到江苏省新沂市，实地探访散装饲料在饲料企业和规模养殖场的推广效果。",
     "饲料厂养殖场实现无缝对接",
     "在江苏省新沂市的中粮饲料厂内，饲料正在通过出料口装进罐装车中，整个过程10分钟，仅需要一位工人进行控制。装满饲料的罐装车将立刻发往养殖场。",
@@ -58,7 +64,55 @@
     "从袋装饲料改为散装饲料意味着整套养殖设备的改造，需要建设成品料塔和自动上料机等配套机械化喂料设备，会使养殖企业增加一次性成本投入。散装饲料的推广应用还受养殖规模的限制，散装饲料节省人工的优势只有达到一定规模后才能体现出来。为了鼓励养殖企业使用散装饲料，一些饲料生产企业为养殖企业无偿建成品料塔和自动上料机等配套机械化喂料设备，前提是在一定时期内使用该企业产品，形成了较紧密的利益连结机制。",
     "‘由于传统养殖习惯，一部分养殖企业还不接受散装饲料，不乐意使用散装饲料。’当地饲料管理部门同志说。思想的转变需要时间，需要各级畜牧饲料管理部门大力宣传推广散装饲料，重点从饲料厂和养殖企业两个方面入手，使全社会认识到饲料散装散运和养殖场散用的经济效益、社会效益和生态效益。",
     "另一方面，亟待落实农机补贴对饲料散装散运工作的支持。虽然农业部已经将养殖场成品料塔、自动上料机和饲料生产企业散装饲料运输车等养殖设备纳入农机补贴范畴，但是从基层农机部门了解，目前很少有散装饲料设备和畜禽养殖设施享受到此项政策。在推广散装饲料工作中，农机购机补贴是覆盖面最广、可操作性最强、支持最直接的普惠扶持政策。各级畜牧饲料管理部门要加强与农机部门的协调力度，把散装饲料设备纳入地方农机补贴目录作为突破口，组织养殖场、设备生产企业等开展技术交流，规范设备制造标准。各级农机管理部门要加强对散装饲料设备纳入农机补贴目录的指导和研究，稳步推进补贴政策惠及散装饲料设备。政府还应在税收和信贷方面予以专项重点扶持，以调动企业的积极性。",
-  ].map((paragraph) => l(paragraph, paragraph));
+  ];
+
+  const bulkFeedEnglish = [
+    "Feed is the material foundation of modern livestock farming. A stable, efficient, safe and environmentally responsible supply supports sustainable production and food safety. During the 13th Five-Year Plan, agricultural authorities promoted closer links between bulk-feed suppliers and farms. A field visit to Xinyi, Jiangsu, examined how this approach was working in feed mills and large farms.",
+    "A seamless link between feed mill and farm",
+    "At the COFCO feed mill in Xinyi, feed is loaded directly into a bulk tanker through an outlet. The entire process takes about ten minutes and requires only one operator, after which the vehicle departs for the farm.",
+    "The Xinyi mill has annual capacity of 240,000 tonnes, six 60-tonne bulk dispatch silos and three loading outlets. Bulk feed already accounts for about 40% of its production.",
+    "Deputy general manager Xiao Peixin explained that bulk production allows feed to move directly from production to the vehicle. It reduces advance inventory and warehouse use, avoids production stoppages while waiting for collection, and improves planned production and efficiency.",
+    "Bulk-feed tankers have a simple structure and usually carry around 20 tonnes. Automated loading and unloading save labor and support continuous operation. Each vehicle is sealed and traceable, while enclosed transport reduces loss and contamination and protects feed quality.",
+    "At the farm, feed is discharged directly into the silo. Operators can feed animals by activating the auger rather than opening and carrying bags. Combining bulk feed with automatic feeding greatly reduces labor; one 1,000-sow farm needed only two people to monitor feeding.",
+    "A farm manager said bulk transport creates a seamless connection between mill and farm, helping protect quality and biosecurity. From processing to the feeding system and finally the animal, enclosed handling minimizes human contact, contamination, product loss and operating risk.",
+    "Bulk feed also removes the need for woven plastic bags. Sealed tanker bodies prevent spillage and pollution during transport, creating wider environmental and social benefits.",
+    "Bulk production, transport and use benefit all parties",
+    "The advantages are clear, but wider adoption still depends on market demand and visible returns. China produces more than 200 million tonnes of commercial feed each year, while packaging, labeling and handling under the bagged model represent substantial annual costs.",
+    "Before introducing bulk feed, COFCO Xinyi studied the market and found that larger farms increasingly use automatic silos to improve efficiency and reduce labor. Field research indicated strong demand: direct supply can lower costs, improve freshness, shorten sales cycles and strengthen service and competitiveness.",
+    "Xiao estimated packaging alone at about RMB 30 per tonne for bagged feed. Together with packing, labor and forklift costs, bulk production saved about RMB 36 per tonne. Tanker freight could cost more, but the total operating economics remained favorable.",
+    "Farms also save unloading and labor expenses. The example compared unloading at about RMB 2.5 per tonne for bulk delivery and RMB 8 per tonne for bagged feed. Benefits are even greater for large farms closely connected with a feed mill.",
+    "In an increasingly competitive market, bulk delivery is a win-win choice for both feed suppliers and livestock farms, Xiao said.",
+    "Extend agricultural machinery subsidies to bulk-feed equipment",
+    "Bulk feed was still at an early adoption stage and represented about 10% of total production. The industry aimed for faster growth during the 13th Five-Year Plan.",
+    "Moving from bags to bulk requires investment in finished-feed silos, automatic loaders and related equipment. Labor savings appear only beyond a certain farm scale. Some feed producers therefore supplied equipment at no charge in exchange for a period of product use, creating closer commercial partnerships.",
+    "Some farms remained hesitant because of established practices. Agricultural and feed authorities therefore needed to explain the economic, social and ecological value of bulk production, transport and on-farm use to both mills and livestock businesses.",
+    "The article also called for effective machinery subsidies. Authorities were encouraged to add bulk-feed equipment to local subsidy catalogues, coordinate technical exchange, improve manufacturing standards, and provide suitable tax and credit support so more farms and manufacturers could adopt the system.",
+  ];
+
+  const bulkFeedThai = [
+    "อาหารสัตว์เป็นรากฐานของปศุสัตว์สมัยใหม่ การจัดหาที่มั่นคง มีประสิทธิภาพ ปลอดภัย และเป็นมิตรต่อสิ่งแวดล้อม ช่วยสนับสนุนการผลิตที่ยั่งยืนและความปลอดภัยทางอาหาร หน่วยงานเกษตรจึงผลักดันการเชื่อมโยงอาหารสัตว์แบบเทกองกับฟาร์มอย่างใกล้ชิด โดยมีการสำรวจผลการใช้งานที่เมืองซินอี มณฑลเจียงซู",
+    "เชื่อมต่อโรงงานอาหารสัตว์กับฟาร์มอย่างไร้รอยต่อ",
+    "ที่โรงงานอาหารสัตว์ COFCO เมืองซินอี อาหารถูกส่งผ่านช่องจ่ายเข้าสู่รถแทงก์โดยตรง ใช้เวลาประมาณสิบนาทีและมีผู้ควบคุมเพียงหนึ่งคน จากนั้นรถจะออกเดินทางไปยังฟาร์มทันที",
+    "โรงงานมีกำลังผลิตปีละ 240,000 ตัน มีไซโลจ่ายอาหารขนาด 60 ตันจำนวนหกชุดและช่องจ่ายสามช่อง ปัจจุบันอาหารแบบเทกองคิดเป็นประมาณ 40% ของผลผลิตทั้งหมด",
+    "รองผู้จัดการใหญ่ เซียวเผยซิน อธิบายว่าระบบเทกองช่วยให้ผลิตแล้วขึ้นรถได้ทันที ลดสินค้าคงคลังและพื้นที่คลังสินค้า ไม่ต้องหยุดรอรถรับสินค้า และช่วยให้วางแผนการผลิตได้มีประสิทธิภาพขึ้น",
+    "รถขนอาหารเทกองมีโครงสร้างเรียบง่ายและมักบรรทุกประมาณ 20 ตัน ระบบขึ้นและลงสินค้าอัตโนมัติช่วยลดแรงงาน ทำงานต่อเนื่องได้ รถทุกคันมีซีลเพื่อการตรวจสอบย้อนกลับ และการขนส่งแบบปิดช่วยลดการสูญเสียกับการปนเปื้อน",
+    "เมื่อถึงฟาร์ม อาหารจะถูกถ่ายเข้าสู่ไซโลโดยตรง ผู้เลี้ยงเพียงเปิดสกรูลำเลียงก็สามารถให้อาหารได้ ไม่ต้องเปิดและเทถุง การทำงานร่วมกับระบบให้อาหารอัตโนมัติช่วยลดแรงงานอย่างมาก โดยฟาร์มแม่สุกร 1,000 ตัวใช้คนเพียงสองคนตรวจระบบ",
+    "ผู้บริหารฟาร์มระบุว่าการขนส่งแบบเทกองเชื่อมโรงงานกับฟาร์มโดยตรง ช่วยรักษาคุณภาพและความปลอดภัยทางชีวภาพ ตั้งแต่การผลิตจนถึงสัตว์กินอาหาร กระบวนการแบบปิดลดการสัมผัส การปนเปื้อน การสูญเสีย และความเสี่ยงในการดำเนินงาน",
+    "อาหารแบบเทกองไม่ต้องใช้ถุงพลาสติกสาน และตัวถังรถที่ปิดสนิทช่วยป้องกันการหกหรือมลพิษระหว่างขนส่ง จึงให้ประโยชน์ทั้งด้านสิ่งแวดล้อมและสังคม",
+    "การผลิต ขนส่ง และใช้อาหารแบบเทกองให้ประโยชน์แก่ทุกฝ่าย",
+    "แม้ข้อดีจะชัดเจน แต่การขยายตลาดยังต้องอาศัยผลตอบแทนที่ธุรกิจมองเห็น จีนผลิตอาหารสัตว์เชิงพาณิชย์มากกว่า 200 ล้านตันต่อปี ขณะที่ระบบบรรจุถุงมีต้นทุนด้านบรรจุภัณฑ์ ฉลาก และการขนถ่ายจำนวนมาก",
+    "ก่อนนำระบบมาใช้ COFCO ซินอีได้ศึกษาตลาดและพบว่าฟาร์มขนาดใหญ่ใช้ไซโลอัตโนมัติมากขึ้นเพื่อลดแรงงานและเพิ่มประสิทธิภาพ การจัดส่งตรงช่วยลดต้นทุน รักษาความสด ลดขั้นตอนการขาย และเพิ่มความสามารถในการแข่งขัน",
+    "เซียวคำนวณว่าค่าบรรจุภัณฑ์ของอาหารแบบถุงอยู่ที่ประมาณ 30 หยวนต่อตัน เมื่อรวมค่าบรรจุ แรงงาน และรถยก ระบบเทกองประหยัดในขั้นผลิตได้ราว 36 หยวนต่อตัน แม้ค่าขนส่งรถแทงก์สูงกว่า แต่โดยรวมยังคุ้มค่า",
+    "ฟาร์มยังลดค่าขนถ่ายและแรงงานได้ ตัวอย่างเปรียบเทียบค่าลงอาหารเทกองประมาณ 2.5 หยวนต่อตัน กับอาหารแบบถุงประมาณ 8 หยวนต่อตัน โดยฟาร์มใหญ่ที่เชื่อมโยงกับโรงงานใกล้ชิดจะได้ประโยชน์มากขึ้น",
+    "ในตลาดที่แข่งขันสูง การจัดส่งแบบเทกองเป็นทางเลือกที่ได้ประโยชน์ร่วมกันทั้งโรงงานอาหารสัตว์และฟาร์ม เซียวกล่าว",
+    "ขยายเงินอุดหนุนเครื่องจักรเกษตรสู่อุปกรณ์อาหารสัตว์แบบเทกอง",
+    "ขณะนั้นอาหารแบบเทกองยังอยู่ในช่วงเริ่มต้นและมีสัดส่วนประมาณ 10% ของผลผลิตทั้งหมด อุตสาหกรรมตั้งเป้าให้เติบโตเร็วขึ้นในช่วงแผนห้าปีฉบับที่ 13",
+    "การเปลี่ยนจากถุงเป็นเทกองต้องลงทุนในไซโล เครื่องป้อนอัตโนมัติ และอุปกรณ์ที่เกี่ยวข้อง อีกทั้งประโยชน์ด้านแรงงานจะเห็นชัดเมื่อฟาร์มมีขนาดเพียงพอ ผู้ผลิตบางรายจึงสนับสนุนอุปกรณ์โดยแลกกับการใช้ผลิตภัณฑ์ในช่วงเวลาที่กำหนด",
+    "ฟาร์มบางส่วนยังลังเลเพราะความเคยชินเดิม หน่วยงานปศุสัตว์และอาหารสัตว์จึงควรสื่อสารคุณค่าด้านเศรษฐกิจ สังคม และสิ่งแวดล้อมของระบบเทกองแก่ทั้งโรงงานและผู้เลี้ยง",
+    "บทความยังเสนอให้ดำเนินนโยบายอุดหนุนอย่างจริงจัง เพิ่มอุปกรณ์เทกองในบัญชีท้องถิ่น ประสานการแลกเปลี่ยนเทคนิค ยกระดับมาตรฐานการผลิต และสนับสนุนด้านภาษีกับสินเชื่อเพื่อให้ฟาร์มและผู้ผลิตนำระบบไปใช้ได้มากขึ้น",
+  ];
+
+  const bulkFeedBody = bulkFeedChinese.map((paragraph, index) => h(paragraph, bulkFeedEnglish[index], bulkFeedThai[index]));
 
   const newsTitles = {
     1: "传统养殖设备和现代化设备比较之冬季供暖设备",
@@ -72,7 +126,166 @@
     9: "广东江门鹤山：加强水产养殖设备巡查 保障养殖户用电安全",
     10: "中国奶牛养殖及养殖设备情况研究报告大纲",
   };
+  const newsTitlesEnglish = {
+    1: "Traditional and modern livestock equipment: winter heating",
+    2: "Traditional and modern livestock equipment: automatic feeding systems",
+    3: "Traditional and modern livestock equipment: ventilation systems",
+    4: "Modern aquaculture equipment: abalone villas",
+    5: "How modern pig-farming equipment improves science and sustainability",
+    6: "The impact of modern equipment on pig production (1)",
+    7: "How to use automated equipment on a modern pig farm",
+    8: "Jingmen landscape crews train in modern equipment operation and maintenance",
+    9: "Heshan, Jiangmen strengthens aquaculture equipment inspections and electrical safety",
+    10: "Research outline on dairy farming and equipment in China",
+  };
+  const newsTitlesThai = {
+    1: "เปรียบเทียบอุปกรณ์ปศุสัตว์แบบดั้งเดิมและสมัยใหม่: ระบบทำความร้อนฤดูหนาว",
+    2: "เปรียบเทียบอุปกรณ์ปศุสัตว์แบบดั้งเดิมและสมัยใหม่: ระบบให้อาหารอัตโนมัติ",
+    3: "เปรียบเทียบอุปกรณ์ปศุสัตว์แบบดั้งเดิมและสมัยใหม่: ระบบระบายอากาศ",
+    4: "อุปกรณ์เพาะเลี้ยงสัตว์น้ำสมัยใหม่: บ้านเป๋าฮื้อ",
+    5: "อุปกรณ์ฟาร์มสุกรสมัยใหม่ช่วยเพิ่มความเป็นวิทยาศาสตร์และความยั่งยืน",
+    6: "ผลของอุปกรณ์สมัยใหม่ต่อการผลิตสุกร (1)",
+    7: "วิธีใช้อุปกรณ์อัตโนมัติในฟาร์มสุกรสมัยใหม่",
+    8: "เจ้าหน้าที่สวนเมืองจิงเหมินอบรมการใช้และบำรุงรักษาเครื่องจักรสมัยใหม่",
+    9: "เฮ่อซาน เมืองเจียงเหมิน เพิ่มการตรวจอุปกรณ์เพาะเลี้ยงสัตว์น้ำและความปลอดภัยทางไฟฟ้า",
+    10: "โครงร่างงานวิจัยการเลี้ยงโคนมและอุปกรณ์ในจีน",
+  };
   const newsViews = { 1: 3471, 2: 3458, 3: 3418, 4: 3514, 5: 3451, 6: 3378, 7: 3569, 8: 3411, 9: 4438, 10: 4477 };
+
+  const uiZh = {
+    home: "首頁",
+    about: "關於我們",
+    products: "產品中心",
+    news: "最新消息",
+    contact: "聯絡我們",
+    contactUs: "洽詢專案",
+    explore: "探索產品",
+    learnMore: "了解更多",
+    details: "查看詳情",
+    backProducts: "返回產品中心",
+    backNews: "返回最新消息",
+    features: "產品特色",
+    applications: "使用範圍",
+    specifications: "規格尺寸",
+    gallery: "產品實績",
+    allProducts: "所有產品",
+    latestNews: "產業消息",
+    originalArchive: "產業資訊",
+    menu: "開啟選單",
+    close: "關閉",
+    readArticle: "閱讀全文",
+    source: "來源",
+    published: "發布日期",
+    emailUs: "寄送 Email",
+    callUs: "立即來電",
+    name: "姓名／公司",
+    email: "電子信箱",
+    phone: "聯絡電話",
+    message: "需求說明",
+    submit: "建立詢價郵件",
+    required: "請填寫姓名、正確的電子信箱與需求說明。",
+    mailReady: "已開啟郵件程式，請確認內容後寄出。",
+    tooFast: "操作過於頻繁，請稍候再試。",
+    visitorCount: "網站瀏覽人次",
+    address: "地址",
+    fax: "傳真",
+    website: "網站",
+    line: "LINE",
+    formTitle: "專案需求表",
+    formIntro: "填寫以下資訊，我們會從用途與現場條件協助評估。",
+    welcomeHint: "點擊畫面周圍進入網站",
+    languageLabel: "選擇網站語言",
+  };
+
+  const uiEn = {
+    home: "Home",
+    about: "About",
+    products: "Products",
+    news: "News",
+    contact: "Contact",
+    contactUs: "Start a project",
+    explore: "Explore products",
+    learnMore: "Learn more",
+    details: "View details",
+    backProducts: "Back to products",
+    backNews: "Back to news",
+    features: "Features",
+    applications: "Applications",
+    specifications: "Specifications & dimensions",
+    gallery: "Product results",
+    allProducts: "All products",
+    latestNews: "Industry news",
+    originalArchive: "Industry information",
+    menu: "Open menu",
+    close: "Close",
+    readArticle: "Read article",
+    source: "Source",
+    published: "Published",
+    emailUs: "Send email",
+    callUs: "Call now",
+    name: "Name / company",
+    email: "Email",
+    phone: "Phone",
+    message: "Project requirements",
+    submit: "Create inquiry email",
+    required: "Please enter your name, a valid email and project requirements.",
+    mailReady: "Your email app has opened. Review the message before sending.",
+    tooFast: "Too many attempts. Please wait and try again.",
+    visitorCount: "Website visits",
+    address: "Address",
+    fax: "Fax",
+    website: "Website",
+    line: "LINE",
+    formTitle: "Project inquiry",
+    formIntro: "Share the intended use and site conditions so we can help evaluate your needs.",
+    welcomeHint: "Click outside the panel to enter the website",
+    languageLabel: "Choose website language",
+  };
+
+  const uiTh = {
+    home: "หน้าหลัก",
+    about: "เกี่ยวกับเรา",
+    products: "ผลิตภัณฑ์",
+    news: "ข่าวสาร",
+    contact: "ติดต่อเรา",
+    contactUs: "สอบถามโครงการ",
+    explore: "ดูผลิตภัณฑ์",
+    learnMore: "ดูเพิ่มเติม",
+    details: "ดูรายละเอียด",
+    backProducts: "กลับไปหน้าผลิตภัณฑ์",
+    backNews: "กลับไปหน้าข่าวสาร",
+    features: "จุดเด่นผลิตภัณฑ์",
+    applications: "การใช้งาน",
+    specifications: "ข้อมูลจำเพาะและขนาด",
+    gallery: "ผลงานผลิตภัณฑ์",
+    allProducts: "ผลิตภัณฑ์ทั้งหมด",
+    latestNews: "ข่าวอุตสาหกรรม",
+    originalArchive: "ข้อมูลอุตสาหกรรม",
+    menu: "เปิดเมนู",
+    close: "ปิด",
+    readArticle: "อ่านบทความ",
+    source: "ที่มา",
+    published: "วันที่เผยแพร่",
+    emailUs: "ส่งอีเมล",
+    callUs: "โทรทันที",
+    name: "ชื่อ／บริษัท",
+    email: "อีเมล",
+    phone: "โทรศัพท์",
+    message: "รายละเอียดความต้องการ",
+    submit: "สร้างอีเมลสอบถาม",
+    required: "โปรดกรอกชื่อ อีเมลที่ถูกต้อง และรายละเอียดโครงการ",
+    mailReady: "เปิดโปรแกรมอีเมลแล้ว โปรดตรวจสอบข้อความก่อนส่ง",
+    tooFast: "มีการใช้งานถี่เกินไป โปรดรอสักครู่แล้วลองใหม่",
+    visitorCount: "จำนวนการเข้าชมเว็บไซต์",
+    address: "ที่อยู่",
+    fax: "แฟกซ์",
+    website: "เว็บไซต์",
+    line: "LINE",
+    formTitle: "แบบสอบถามโครงการ",
+    formIntro: "แจ้งวัตถุประสงค์และสภาพพื้นที่ เพื่อให้เราช่วยประเมินความต้องการ",
+    welcomeHint: "คลิกพื้นที่ด้านนอกเพื่อเข้าสู่เว็บไซต์",
+    languageLabel: "เลือกภาษาของเว็บไซต์",
+  };
 
   window.HLS_DATA = {
     company: {
@@ -87,74 +300,10 @@
       address: l("高雄市大寮區大有一街33號", "No. 33, Dayou 1st St., Daliao Dist., Kaohsiung City, Taiwan"),
     },
     ui: {
-      zh: {
-        home: "首頁",
-        about: "關於我們",
-        products: "產品中心",
-        news: "最新消息",
-        contact: "聯絡我們",
-        contactUs: "洽詢專案",
-        explore: "探索產品",
-        learnMore: "了解更多",
-        details: "查看詳情",
-        backProducts: "返回產品中心",
-        backNews: "返回最新消息",
-        features: "產品特色",
-        applications: "使用範圍",
-        specifications: "規格尺寸",
-        gallery: "產品實績",
-        allProducts: "所有產品",
-        latestNews: "歷史消息",
-        originalArchive: "原站歷史資料",
-        menu: "開啟選單",
-        close: "關閉",
-        readArticle: "閱讀全文",
-        source: "來源",
-        published: "發布日期",
-        emailUs: "寄送 Email",
-        callUs: "立即來電",
-        name: "姓名／公司",
-        email: "電子信箱",
-        phone: "聯絡電話",
-        message: "需求說明",
-        submit: "建立詢價郵件",
-        required: "請填寫姓名、電子信箱與需求說明。",
-        mailReady: "已開啟郵件程式，請確認內容後寄出。",
-      },
-      en: {
-        home: "Home",
-        about: "About",
-        products: "Products",
-        news: "News",
-        contact: "Contact",
-        contactUs: "Start a project",
-        explore: "Explore products",
-        learnMore: "Learn more",
-        details: "View details",
-        backProducts: "Back to products",
-        backNews: "Back to news",
-        features: "Features",
-        applications: "Applications",
-        specifications: "Specifications",
-        gallery: "Project gallery",
-        allProducts: "All products",
-        latestNews: "Archive",
-        originalArchive: "Legacy website archive",
-        menu: "Open menu",
-        close: "Close",
-        readArticle: "Read article",
-        source: "Source",
-        published: "Published",
-        emailUs: "Send email",
-        callUs: "Call now",
-        name: "Name / company",
-        email: "Email",
-        phone: "Phone",
-        message: "Project requirements",
-        submit: "Create inquiry email",
-        required: "Please enter your name, email and project requirements.",
-        mailReady: "Your email app has been opened. Review the message and send it when ready.",
-      },
+      zh: uiZh,
+      "zh-CN": Object.fromEntries(Object.entries(uiZh).map(([key, value]) => [key, window.HLSLocale.toSimplified(value)])),
+      en: uiEn,
+      th: uiTh,
     },
     about: {
       heading: l("半世紀，專注把複材做到更好", "Five decades of focused composite craftsmanship"),
@@ -374,12 +523,12 @@
     news: [
       {
         id: 21,
-        title: l("散装饲料助现代畜牧业提质增效", "Bulk feed improves quality and efficiency in modern livestock farming"),
+        title: h("散装饲料助现代畜牧业提质增效", "Bulk feed improves quality and efficiency in modern livestock farming", "อาหารสัตว์แบบเทกองช่วยยกระดับคุณภาพและประสิทธิภาพของปศุสัตว์สมัยใหม่"),
         date: "2016-11-15",
-        source: l("农民日报（原站标示）", "Farmers' Daily (as credited on the legacy site)"),
+        source: h("农民日报", "Farmers' Daily", "หนังสือพิมพ์เกษตรกร"),
         author: "hkfb16ff",
         views: 4556,
-        summary: l("饲料是现代养殖业发展的物质基础，散装饲料与自动喂料系统的结合可提升效率并节省人力成本。", "Bulk feed and automated feeding systems can improve efficiency, reduce handling and lower labor costs."),
+        summary: h("饲料是现代养殖业发展的物质基础，散装饲料与自动喂料系统的结合可提升效率并节省人力成本。", "Bulk feed and automated feeding systems can improve efficiency, reduce handling and lower labor costs.", "อาหารสัตว์แบบเทกองร่วมกับระบบให้อาหารอัตโนมัติช่วยเพิ่มประสิทธิภาพ ลดการขนย้าย และลดต้นทุนแรงงาน"),
         body: bulkFeedBody,
       },
       ...Object.keys(newsTitles)
@@ -387,13 +536,13 @@
         .sort((a, b) => b - a)
         .map((id) => ({
           id,
-          title: l(newsTitles[id], newsTitles[id]),
+          title: h(newsTitles[id], newsTitlesEnglish[id], newsTitlesThai[id]),
           date: "2016-09-05",
-          source: l("原站未註明", "Not specified on the legacy site"),
+          source: l("未註明", "Source not specified", "ไม่ระบุแหล่งที่มา"),
           author: "hkfb16ff",
           views: newsViews[id],
-          summary: l("在畜禽養殖生產中，冬季加熱與現代化設備對生產效率與管理具有重要影響。", "Winter heating and modern equipment can have an important impact on livestock productivity and operations."),
-          body: legacyHeatingBody,
+          summary: l("在畜禽養殖生產中，冬季加熱與現代化設備對生產效率與管理具有重要影響。", "Winter heating and modern equipment can have an important impact on livestock productivity and operations.", "ระบบทำความร้อนในฤดูหนาวและอุปกรณ์สมัยใหม่มีผลสำคัญต่อประสิทธิภาพและการจัดการฟาร์มปศุสัตว์"),
+          body: heatingBody,
         })),
     ],
   };

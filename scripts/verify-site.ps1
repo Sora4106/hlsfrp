@@ -27,15 +27,17 @@ function Capture-Page([string]$Name, [string]$Size, [string]$Url) {
 
 try {
     Start-Sleep -Seconds 2
-    $baseUrl = "http://127.0.0.1:$Port"
-    Capture-Page "home-desktop" "1440,1200" "$baseUrl/#/home"
-    Capture-Page "products-mobile" "390,844" "$baseUrl/#/products"
-    Capture-Page "product-desktop" "1440,1200" "$baseUrl/#/product/feed-system"
-    Capture-Page "contact-desktop" "1440,1200" "$baseUrl/#/contact"
-    Capture-Page "about-desktop" "1440,1200" "$baseUrl/#/about"
-    Capture-Page "news-desktop" "1440,1200" "$baseUrl/#/news"
-    Capture-Page "article-mobile" "390,844" "$baseUrl/#/news/21"
-    Write-Host "Rendered seven representative desktop and mobile routes successfully."
+    $baseUrl = "http://127.0.0.1:$Port/?skipWelcome=1"
+    Capture-Page "welcome-desktop" "1440,900" "http://127.0.0.1:$Port/#/home"
+    Capture-Page "home-desktop" "1440,1200" "$baseUrl#/home"
+    Capture-Page "products-mobile" "390,844" "$baseUrl#/products"
+    Capture-Page "product-section-desktop" "1440,1200" "$baseUrl#/products?section=storage"
+    Capture-Page "product-desktop" "1440,1200" "$baseUrl#/product/feed-system"
+    Capture-Page "contact-desktop" "1440,1200" "$baseUrl#/contact"
+    Capture-Page "about-desktop" "1440,1200" "$baseUrl#/about"
+    Capture-Page "news-desktop" "1440,1200" "$baseUrl#/news"
+    Capture-Page "article-mobile" "390,844" "$baseUrl#/news/21"
+    Write-Host "Rendered the welcome screen and eight representative desktop and mobile routes successfully."
 } finally {
     if ($server -and -not $server.HasExited) {
         Stop-Process -Id $server.Id

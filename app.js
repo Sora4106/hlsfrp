@@ -2,9 +2,20 @@
   "use strict";
 
   const state = {
-    lang: localStorage.getItem("hls-lang") === "en" ? "en" : "zh",
+    lang: window.HLSLocale.detectLanguage(),
     data: null,
+    visitorCount: null,
   };
+  const now = Date.now();
+  let rapidReloadDelay = 0;
+  try {
+    const lastLoad = Number(sessionStorage.getItem("hls-last-load") || 0);
+    const elapsed = now - lastLoad;
+    rapidReloadDelay = lastLoad && elapsed < 1800 ? Math.min(1400, 1800 - elapsed) : 0;
+    sessionStorage.setItem("hls-last-load", String(now));
+  } catch {
+    rapidReloadDelay = 0;
+  }
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
@@ -20,11 +31,19 @@
     if (typeof value === "string" || typeof value === "number") return String(value);
     return value[state.lang] || value.zh || value.en || "";
   };
-  const ui = (key) => state.data.ui[state.lang][key] || key;
+  const ui = (key) => state.data.ui[state.lang]?.[key] || state.data.ui.en[key] || key;
+  const copy = (zh, en, th) => t(window.HLSLocale.localized(zh, en, th));
+  const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
   const routeHref = (path) => `#/${path}`;
   const productById = (id) => state.data.products.find((product) => product.id === id);
   const categoryById = (id) => state.data.categories.find((category) => category.id === id);
-  const assetLabel = (path) => path.split("/").pop().replace(/[_-]/g, " ").replace(/\.[^.]+$/, "");
+  const thumbnailPath = (path) => path.includes("/optimized/") ? path.replace(/\.webp$/i, "-card.webp") : path;
+
+  function requestedSection() {
+    const query = location.hash.split("?")[1] || "";
+    const section = new URLSearchParams(query).get("section");
+    return state.data.categories.some((category) => category.id === section) ? section : "";
+  }
 
   const icons = {
     arrow: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>',
@@ -51,6 +70,10 @@
     return `<a class="button button-${variant}" href="${href}"><span>${esc(label)}</span>${icons.arrow}</a>`;
   }
 
+  function scrollButton(target, label, variant = "outline") {
+    return `<button class="button button-${variant}" type="button" data-scroll-target="${target}"><span>${esc(label)}</span>${icons.arrow}</button>`;
+  }
+
   function sectionHeading(eyebrow, heading, body = "", alignment = "left") {
     return `
       <div class="section-heading section-heading-${alignment} reveal">
@@ -69,6 +92,12 @@
       ["news", ui("news")],
       ["contact", ui("contact")],
     ];
+    const languageOptions = [
+      ["zh", "繁中"],
+      ["zh-CN", "简中"],
+      ["en", "EN"],
+      ["th", "ไทย"],
+    ];
     const active = currentRoute()[0];
     $("#site-header").innerHTML = `
       <div class="utility-bar">
@@ -77,27 +106,25 @@
           <div class="utility-actions">
             <a href="tel:${esc(company.phone)}">${icons.phone}${esc(company.phone)}</a>
             <span class="utility-divider"></span>
-            <button class="language-switch" type="button" data-action="language" aria-label="${state.lang === "zh" ? "Switch to English" : "切換為繁體中文"}">
-              <span class="${state.lang === "zh" ? "active" : ""}">繁中</span>
-              <span>／</span>
-              <span class="${state.lang === "en" ? "active" : ""}">EN</span>
-            </button>
+            <div class="language-switch" role="group" aria-label="${esc(ui("languageLabel"))}">
+              ${languageOptions.map(([code, label]) => `<button type="button" data-language="${code}" class="${state.lang === code ? "active" : ""}" aria-pressed="${state.lang === code}">${label}</button>`).join("")}
+            </div>
           </div>
         </div>
       </div>
       <div class="nav-shell">
         <div class="container nav-inner">
           <a class="brand" href="${routeHref("home")}" aria-label="${esc(t(company.name))}">
-            <span class="brand-mark"><img src="public/assets/legacy/11_n090.jpg" alt="" /></span>
+            <span class="brand-mark"><img src="public/assets/optimized/11_n090.webp" alt="" width="259" height="154" /></span>
             <span class="brand-copy">
               <strong>${esc(t(company.name))}</strong>
-              <small>${state.lang === "zh" ? "HOU LI SHENG ENTERPRISE CO., LTD" : "FRP DESIGN & MANUFACTURING"}</small>
+              <small>${state.lang === "en" || state.lang === "th" ? "FRP DESIGN & MANUFACTURING" : "HOU LI SHENG ENTERPRISE CO., LTD"}</small>
             </span>
           </a>
           <button class="menu-toggle" type="button" data-action="menu" aria-expanded="false" aria-label="${esc(ui("menu"))}">
             <span></span><span></span><span></span>
           </button>
-          <nav class="main-nav" aria-label="${state.lang === "zh" ? "主要導覽" : "Main navigation"}">
+          <nav class="main-nav" aria-label="${copy("主要導覽", "Main navigation", "เมนูหลัก")}">
             ${nav.map(([path, label]) => `<a href="${routeHref(path)}" class="${active === path || (active === "product" && path === "products") ? "active" : ""}">${esc(label)}</a>`).join("")}
             <a class="nav-cta" href="${routeHref("contact")}">${esc(ui("contactUs"))}${icons.arrow}</a>
           </nav>
@@ -111,7 +138,7 @@
       <div class="footer-main">
         <div class="container footer-grid">
           <div class="footer-brand">
-            <img src="public/assets/legacy/11_n090.jpg" alt="" />
+            <img src="public/assets/optimized/11_n090.webp" alt="" width="259" height="154" loading="lazy" decoding="async" />
             <div><strong>${esc(t(company.name))}</strong><p>${esc(t(company.tagline))}</p></div>
           </div>
           <div>
@@ -133,7 +160,8 @@
       <div class="footer-bottom">
         <div class="container">
           <span>© ${new Date().getFullYear()} ${esc(t(company.name))}</span>
-          <span>${state.lang === "zh" ? "網站內容移轉自原公司網站・台灣製造" : "Content migrated from the legacy company website · Made in Taiwan"}</span>
+          <div class="visitor-counter" aria-live="polite"><span>${esc(ui("visitorCount"))}</span><strong data-visitor-count>${state.visitorCount == null ? "—" : new Intl.NumberFormat(window.HLSLocale.languageTags[state.lang]).format(state.visitorCount)}</strong></div>
+          <span>${copy("台灣設計與製造", "Designed and manufactured in Taiwan", "ออกแบบและผลิตในไต้หวัน")}</span>
         </div>
       </div>`;
   }
@@ -142,7 +170,7 @@
     return `
       <article class="category-card reveal" style="--delay:${index * 70}ms">
         <a href="${routeHref("products")}" aria-label="${esc(t(category.name))}">
-          <div class="category-image"><img src="${esc(category.image)}" alt="${esc(t(category.name))}" loading="lazy" /></div>
+          <div class="category-image"><img src="${esc(thumbnailPath(category.image))}" alt="${esc(t(category.name))}" loading="lazy" decoding="async" /></div>
           <div class="category-content">
             <span class="category-number">0${index + 1}</span>
             <h3>${esc(t(category.name))}</h3>
@@ -160,7 +188,7 @@
       <article class="product-card reveal" style="--delay:${index * 55}ms">
         <a href="${routeHref(`product/${product.id}`)}">
           <div class="product-image">
-            <img src="${esc(image)}" alt="${esc(t(product.name))}" loading="lazy" />
+            <img src="${esc(thumbnailPath(image))}" alt="${esc(t(product.name))}" loading="lazy" decoding="async" />
             <span class="product-arrow">${icons.arrow}</span>
           </div>
           <div class="product-content">
@@ -184,7 +212,7 @@
         <div class="container hero-layout">
           <div class="hero-copy">
             <p class="hero-kicker">${esc(t(company.eyebrow))}</p>
-            <h1>${state.lang === "zh" ? "專業複材製造，<br><em>成就長久可靠</em>" : "Composite expertise,<br><em>built to endure</em>"}</h1>
+            <h1>${copy("專業複材製造，<br><em>成就長久可靠</em>", "Composite expertise,<br><em>built to endure</em>", "ผู้เชี่ยวชาญวัสดุคอมโพสิต<br><em>เพื่อความทนทานที่ไว้วางใจได้</em>")}</h1>
             <p>${esc(t(company.tagline))}</p>
             <div class="hero-actions">
               ${buttonLink(routeHref("products"), ui("explore"))}
@@ -193,30 +221,30 @@
           </div>
           <div class="hero-stamp" aria-label="Since 1975"><span>SINCE</span><strong>1975</strong><small>FRP EXPERTISE</small></div>
         </div>
-        <a class="scroll-cue" href="#home-about"><span>${state.lang === "zh" ? "向下探索" : "Discover"}</span><i></i></a>
+        <a class="scroll-cue" href="#home-about"><span>${copy("向下探索", "Discover", "เลื่อนลงเพื่อดูเพิ่มเติม")}</span><i></i></a>
       </section>
 
       <section class="capability-strip">
         <div class="container capability-grid">
-          <div><strong>50<sup>+</sup></strong><span>${state.lang === "zh" ? "年製造經驗" : "Years of experience"}</span></div>
-          <div><strong>03</strong><span>${state.lang === "zh" ? "亞洲服務據點" : "Asian locations"}</span></div>
-          <div><strong>FRP</strong><span>${state.lang === "zh" ? "設計・研發・製造" : "Design · R&D · Manufacturing"}</span></div>
+          <div><strong>50<sup>+</sup></strong><span>${copy("年製造經驗", "Years of experience", "ปีแห่งประสบการณ์")}</span></div>
+          <div><strong>03</strong><span>${copy("亞洲服務據點", "Asian locations", "จุดบริการในเอเชีย")}</span></div>
+          <div><strong>FRP</strong><span>${copy("設計・研發・製造", "Design · R&D · Manufacturing", "ออกแบบ・วิจัย・ผลิต")}</span></div>
         </div>
       </section>
 
       <section id="home-about" class="section about-preview">
         <div class="container split-layout">
           <div class="about-visual reveal">
-            <div class="image-frame"><img src="public/assets/legacy/18_cjzo.jpg" alt="${state.lang === "zh" ? "好利生高雄工廠" : "Hou Li Sheng factory in Kaohsiung"}" loading="lazy" /></div>
-            <div class="experience-card"><strong>1975</strong><span>${state.lang === "zh" ? "從高雄出發" : "Founded in Kaohsiung"}</span></div>
+            <div class="image-frame"><img src="public/assets/optimized/18_cjzo.webp" alt="${copy("好利生高雄工廠", "Hou Li Sheng factory in Kaohsiung", "โรงงานโฮ่ว ลี่ เซิง ที่เกาสง")}" loading="lazy" decoding="async" /></div>
+            <div class="experience-card"><strong>1975</strong><span>${copy("從高雄出發", "Founded in Kaohsiung", "ก่อตั้งที่เกาสง")}</span></div>
           </div>
           <div class="about-copy">
-            ${sectionHeading(state.lang === "zh" ? "關於好利生" : "ABOUT HOU LI SHENG", t(about.heading), t(about.lead))}
+            ${sectionHeading(copy("關於好利生", "ABOUT HOU LI SHENG", "เกี่ยวกับโฮ่ว ลี่ เซิง"), t(about.heading), t(about.lead))}
             <p class="body-copy reveal">${esc(t(about.paragraphs[0]))}</p>
             <div class="mini-values reveal">
-              <span>${icons.check}${state.lang === "zh" ? "台灣製造" : "Made in Taiwan"}</span>
-              <span>${icons.check}${state.lang === "zh" ? "彈性客製" : "Custom solutions"}</span>
-              <span>${icons.check}${state.lang === "zh" ? "耐用工藝" : "Durable craft"}</span>
+              <span>${icons.check}${copy("台灣製造", "Made in Taiwan", "ผลิตในไต้หวัน")}</span>
+              <span>${icons.check}${copy("彈性客製", "Custom solutions", "สั่งผลิตได้ยืดหยุ่น")}</span>
+              <span>${icons.check}${copy("耐用工藝", "Durable craft", "งานผลิตที่ทนทาน")}</span>
             </div>
             <div class="reveal">${buttonLink(routeHref("about"), ui("learnMore"), "outline")}</div>
           </div>
@@ -225,7 +253,7 @@
 
       <section class="section category-section">
         <div class="container">
-          ${sectionHeading(state.lang === "zh" ? "跨產業解決方案" : "INDUSTRY SOLUTIONS", state.lang === "zh" ? "一種材料，回應多種現場需求" : "One material, engineered for many environments", state.lang === "zh" ? "從養殖、污水到特殊儲存與衛浴設備，以 FRP 的耐蝕、輕量與成型彈性，打造適合現場的產品。" : "FRP's corrosion resistance, low weight and forming flexibility support farming, wastewater, storage and sanitation applications.")}
+          ${sectionHeading(copy("跨產業解決方案", "INDUSTRY SOLUTIONS", "โซลูชันสำหรับหลายอุตสาหกรรม"), copy("一種材料，回應多種現場需求", "One material, engineered for many environments", "วัสดุหนึ่งชนิด รองรับสภาพงานที่หลากหลาย"), copy("從養殖、污水到特殊儲存與衛浴設備，以 FRP 的耐蝕、輕量與成型彈性，打造適合現場的產品。", "FRP's corrosion resistance, low weight and forming flexibility support farming, wastewater, storage and sanitation applications.", "ด้วยคุณสมบัติทนการกัดกร่อน น้ำหนักเบา และขึ้นรูปได้ยืดหยุ่น FRP จึงเหมาะกับงานปศุสัตว์ บำบัดน้ำเสีย ถังเก็บ และสุขภัณฑ์"))}
           <div class="category-grid">${state.data.categories.map(categoryCard).join("")}</div>
         </div>
       </section>
@@ -233,7 +261,7 @@
       <section class="section featured-section">
         <div class="container">
           <div class="heading-row">
-            ${sectionHeading(state.lang === "zh" ? "精選產品" : "FEATURED PRODUCTS", state.lang === "zh" ? "從需求出發，製作剛好的設備" : "Products shaped around real requirements")}
+            ${sectionHeading(copy("精選產品", "FEATURED PRODUCTS", "ผลิตภัณฑ์แนะนำ"), copy("從需求出發，製作剛好的設備", "Products shaped around real requirements", "ออกแบบอุปกรณ์ให้เหมาะกับความต้องการจริง"))}
             <div class="reveal">${buttonLink(routeHref("products"), ui("allProducts"), "outline")}</div>
           </div>
           <div class="product-grid">${featured.map(productCard).join("")}</div>
@@ -243,9 +271,9 @@
       <section class="section quality-banner">
         <div class="quality-image"></div>
         <div class="container quality-content reveal">
-          <p class="eyebrow">${state.lang === "zh" ? "可靠來自每一道細節" : "RELIABILITY IN EVERY DETAIL"}</p>
-          <h2>${state.lang === "zh" ? "真材實料，讓產品經得起時間" : "Honest materials, made to stand the test of time"}</h2>
-          <p>${state.lang === "zh" ? "從結構、材質到現場安裝條件，我們以累積數十年的製造經驗協助評估。" : "From structural design and materials to installation conditions, decades of experience guide every assessment."}</p>
+          <p class="eyebrow">${copy("可靠來自每一道細節", "RELIABILITY IN EVERY DETAIL", "ความเชื่อมั่นเริ่มจากทุกรายละเอียด")}</p>
+          <h2>${copy("真材實料，讓產品經得起時間", "Honest materials, made to stand the test of time", "วัสดุคุณภาพ เพื่อผลิตภัณฑ์ที่ทนต่อกาลเวลา")}</h2>
+          <p>${copy("從結構、材質到現場安裝條件，我們以累積數十年的製造經驗協助評估。", "From structural design and materials to installation conditions, decades of experience guide every assessment.", "ตั้งแต่โครงสร้าง วัสดุ ไปจนถึงเงื่อนไขติดตั้ง เราใช้ประสบการณ์หลายทศวรรษช่วยประเมินทุกโครงการ")}</p>
           ${buttonLink(routeHref("contact"), ui("contactUs"), "light")}
         </div>
       </section>
@@ -253,7 +281,7 @@
       <section class="section news-preview">
         <div class="container">
           <div class="heading-row">
-            ${sectionHeading(state.lang === "zh" ? "原站內容完整保存" : "LEGACY CONTENT PRESERVED", ui("latestNews"), state.lang === "zh" ? "舊網站發布的 11 篇消息已完整移轉。" : "All 11 news entries published on the legacy website are preserved.")}
+            ${sectionHeading(copy("產業知識與動態", "INDUSTRY KNOWLEDGE", "ความรู้และข่าวอุตสาหกรรม"), ui("latestNews"), copy("掌握養殖設備、產業應用與公司相關資訊。", "Explore equipment knowledge, industry applications and company updates.", "ติดตามความรู้ด้านอุปกรณ์ การประยุกต์ใช้ในอุตสาหกรรม และข่าวสารของบริษัท"))}
             <div class="reveal">${buttonLink(routeHref("news"), ui("latestNews"), "outline")}</div>
           </div>
           <div class="news-list home-news-list">
@@ -269,22 +297,22 @@
     const about = state.data.about;
     setMeta(ui("about"), t(about.lead));
     return `
-      ${renderPageHero(state.lang === "zh" ? "半世紀的堅持，持續向前" : "Five decades of progress", ui("about"), "public/assets/legacy/17_u2wr.jpg")}
+      ${renderPageHero(copy("半世紀的堅持，持續向前", "Five decades of progress", "กว่าครึ่งศตวรรษที่มุ่งมั่นพัฒนา"), ui("about"), "public/assets/optimized/17_u2wr.webp")}
       <section class="section story-section">
         <div class="container story-grid">
           <div>
-            ${sectionHeading(state.lang === "zh" ? "我們的故事" : "OUR STORY", t(about.heading), t(about.lead))}
+            ${sectionHeading(copy("我們的故事", "OUR STORY", "เรื่องราวของเรา"), t(about.heading), t(about.lead))}
             <div class="story-copy reveal">${about.paragraphs.map((paragraph) => `<p>${esc(t(paragraph))}</p>`).join("")}</div>
           </div>
           <div class="story-image-stack reveal">
-            <img class="story-main" src="public/assets/legacy/18_cjzo.jpg" alt="${state.lang === "zh" ? "好利生工廠" : "Hou Li Sheng factory"}" />
-            <img class="story-detail" src="public/assets/legacy/17_u2wr.jpg" alt="${state.lang === "zh" ? "FRP 飼料桶生產基地" : "FRP feed silo production site"}" />
+            <img class="story-main" src="public/assets/optimized/18_cjzo.webp" alt="${copy("好利生工廠", "Hou Li Sheng factory", "โรงงานโฮ่ว ลี่ เซิง")}" loading="lazy" decoding="async" />
+            <img class="story-detail" src="public/assets/optimized/17_u2wr-card.webp" alt="${copy("FRP 飼料桶生產基地", "FRP feed silo production site", "ฐานการผลิตไซโลอาหารสัตว์ FRP")}" loading="lazy" decoding="async" />
           </div>
         </div>
       </section>
       <section class="section timeline-section">
         <div class="container">
-          ${sectionHeading(state.lang === "zh" ? "發展足跡" : "OUR JOURNEY", state.lang === "zh" ? "從在地製造，到服務亞洲市場" : "From local manufacturing to regional service", "", "center")}
+          ${sectionHeading(copy("發展足跡", "OUR JOURNEY", "เส้นทางการเติบโต"), copy("從在地製造，到服務亞洲市場", "From local manufacturing to regional service", "จากการผลิตในท้องถิ่นสู่การบริการตลาดเอเชีย"), "", "center")}
           <div class="timeline">
             ${about.milestones.map((item, index) => `<div class="timeline-item reveal" style="--delay:${index * 80}ms"><strong>${esc(item.year)}</strong><span></span><p>${esc(t(item.text))}</p></div>`).join("")}
           </div>
@@ -293,9 +321,9 @@
       <section class="section principles-section">
         <div class="container principles-grid">
           ${[
-            ["01", state.lang === "zh" ? "真材實料" : "Honest materials", state.lang === "zh" ? "以合適材料與結構回應使用環境。" : "Materials and structures selected for the actual environment."],
-            ["02", state.lang === "zh" ? "經驗落地" : "Applied experience", state.lang === "zh" ? "把數十年製造經驗轉化成可執行方案。" : "Decades of manufacturing knowledge turned into practical solutions."],
-            ["03", state.lang === "zh" ? "彈性客製" : "Flexible customization", state.lang === "zh" ? "依尺寸、容量與現場條件討論製作。" : "Dimensions, capacity and site conditions can all be discussed."],
+            ["01", copy("真材實料", "Honest materials", "วัสดุคุณภาพ"), copy("以合適材料與結構回應使用環境。", "Materials and structures selected for the actual environment.", "เลือกวัสดุและโครงสร้างให้เหมาะกับสภาพใช้งานจริง")],
+            ["02", copy("經驗落地", "Applied experience", "ประสบการณ์ที่ใช้งานได้จริง"), copy("把數十年製造經驗轉化成可執行方案。", "Decades of manufacturing knowledge turned into practical solutions.", "เปลี่ยนประสบการณ์หลายทศวรรษให้เป็นโซลูชันที่นำไปใช้ได้")],
+            ["03", copy("彈性客製", "Flexible customization", "การสั่งผลิตที่ยืดหยุ่น"), copy("依尺寸、容量與現場條件討論製作。", "Dimensions, capacity and site conditions can all be discussed.", "ปรับขนาด ความจุ และรายละเอียดตามสภาพพื้นที่")],
           ].map(([number, title, text], index) => `<article class="principle reveal" style="--delay:${index * 70}ms"><span>${number}</span><h3>${esc(title)}</h3><p>${esc(text)}</p></article>`).join("")}
         </div>
       </section>
@@ -314,14 +342,14 @@
   }
 
   function renderProducts() {
-    setMeta(ui("products"), state.lang === "zh" ? "完整瀏覽好利生 FRP 養殖、污水處理、儲存與衛浴設備。" : "Browse Hou Li Sheng FRP farming, wastewater, storage and sanitation equipment.");
+    setMeta(ui("products"), copy("瀏覽好利生 FRP 養殖、污水處理、儲存與衛浴設備。", "Browse Hou Li Sheng FRP farming, wastewater, storage and sanitation equipment.", "ดูอุปกรณ์ FRP สำหรับปศุสัตว์ บำบัดน้ำเสีย ถังเก็บ และสุขภัณฑ์ของโฮ่ว ลี่ เซิง"));
     return `
-      ${renderPageHero(state.lang === "zh" ? "耐蝕・輕量・耐用・可客製" : "CORROSION RESISTANT · LIGHTWEIGHT · CUSTOM", ui("products"), "public/assets/legacy/10_9kto.jpg")}
+      ${renderPageHero(copy("耐蝕・輕量・耐用・可客製", "CORROSION RESISTANT · LIGHTWEIGHT · CUSTOM", "ทนการกัดกร่อน・น้ำหนักเบา・ทนทาน・สั่งผลิตได้"), ui("products"), "public/assets/optimized/10_9kto.webp")}
       <section class="section product-index-intro">
         <div class="container">
-          ${sectionHeading(state.lang === "zh" ? "完整產品系列" : "FULL PRODUCT RANGE", state.lang === "zh" ? "為不同產業環境打造合適的 FRP 設備" : "FRP equipment for diverse industrial environments", state.lang === "zh" ? "所有舊站有效產品頁與原始實拍圖片均已移轉至此。" : "Every valid legacy product page and original product image has been migrated here.", "center")}
+          ${sectionHeading(copy("完整產品系列", "FULL PRODUCT RANGE", "กลุ่มผลิตภัณฑ์ครบถ้วน"), copy("為不同產業環境打造合適的 FRP 設備", "FRP equipment for diverse industrial environments", "อุปกรณ์ FRP สำหรับสภาพแวดล้อมอุตสาหกรรมที่หลากหลาย"), copy("依照用途、容量與現場條件，選擇適合的產品與客製方案。", "Choose suitable products and custom options by use, capacity and site conditions.", "เลือกผลิตภัณฑ์และการสั่งทำตามการใช้งาน ความจุ และสภาพพื้นที่"), "center")}
           <div class="product-jump reveal">
-            ${state.data.categories.map((category) => `<a href="#category-${esc(category.id)}">${esc(t(category.name))}</a>`).join("")}
+            ${state.data.categories.map((category) => `<button type="button" data-product-section="${esc(category.id)}">${esc(t(category.name))}</button>`).join("")}
           </div>
         </div>
       </section>
@@ -352,11 +380,15 @@
             <p class="eyebrow">${esc(t(category.name))}</p>
             <h1>${esc(t(product.name))}</h1>
             <p>${esc(t(product.summary))}</p>
-            ${buttonLink(routeHref("contact"), ui("contactUs"))}
+            <div class="product-detail-actions">
+              ${buttonLink(routeHref("contact"), ui("contactUs"))}
+              ${scrollButton("product-results", ui("gallery"))}
+              ${scrollButton("product-specifications", ui("specifications"))}
+            </div>
           </div>
-          <button class="product-hero-image gallery-trigger reveal" type="button" data-image="${esc(product.images[0])}" data-caption="${esc(t(product.name))}">
-            <img src="${esc(product.images[0])}" alt="${esc(t(product.name))}" />
-            <span>${state.lang === "zh" ? "放大查看" : "View image"}</span>
+          <button class="product-hero-image gallery-trigger reveal" type="button" data-image="${esc(product.images[0])}" aria-label="${copy("放大圖片", "Enlarge image", "ขยายภาพ")}">
+            <img src="${esc(product.images[0])}" alt="${esc(t(product.name))}" decoding="async" />
+            <span>${copy("放大查看", "View image", "ขยายภาพ")}</span>
           </button>
         </div>
       </section>
@@ -372,23 +404,22 @@
             <p class="eyebrow">${esc(ui("applications"))}</p>
             <p>${esc(t(product.applications))}</p>
           </article>
-          <article class="fact-block reveal">
-            <div class="fact-icon">${icons.arrow}</div>
-            <p class="eyebrow">${esc(ui("specifications"))}</p>
-            <p>${esc(t(product.specifications))}</p>
-          </article>
         </div>
       </section>
-      <section class="section product-gallery-section">
+      <section id="product-results" class="section product-gallery-section">
         <div class="container">
-          ${sectionHeading(state.lang === "zh" ? "原始產品影像" : "ORIGINAL PRODUCT IMAGERY", ui("gallery"), state.lang === "zh" ? "以下圖片完整保留自公司舊網站。" : "The images below are preserved from the legacy company website.")}
+          ${sectionHeading(copy("實際產品與應用", "PRODUCTS IN USE", "ผลิตภัณฑ์และการใช้งานจริง"), ui("gallery"), copy("點擊圖片即可查看較大的產品影像。", "Select an image to view a larger version.", "คลิกภาพเพื่อดูผลิตภัณฑ์ในขนาดใหญ่ขึ้น"))}
           <div class="detail-gallery ${product.images.length === 1 ? "single" : ""}">
-            ${product.images.map((image, index) => `<button class="gallery-trigger reveal" type="button" data-image="${esc(image)}" data-caption="${esc(t(product.name))} ${index + 1}"><img src="${esc(image)}" alt="${esc(t(product.name))} ${index + 1}" loading="lazy" /><span>${assetLabel(image)}</span></button>`).join("")}
+            ${product.images.map((image, index) => `<button class="gallery-trigger reveal" type="button" data-image="${esc(image)}" aria-label="${copy("放大圖片", "Enlarge image", "ขยายภาพ")} ${index + 1}"><img src="${esc(thumbnailPath(image))}" alt="${esc(t(product.name))} ${index + 1}" loading="lazy" decoding="async" /></button>`).join("")}
           </div>
+        </div>
+      </section>
+      <section id="product-specifications" class="section product-specification-section">
+        <div class="container">
+          ${sectionHeading(copy("產品資料", "PRODUCT DATA", "ข้อมูลผลิตภัณฑ์"), ui("specifications"), t(product.specifications))}
           ${product.specImages?.length ? `
             <div class="spec-images">
-              <h2 class="reveal">${esc(ui("specifications"))}</h2>
-              ${product.specImages.map((image) => `<button class="gallery-trigger spec-card reveal" type="button" data-image="${esc(image)}" data-caption="${esc(t(product.name))} ${esc(ui("specifications"))}"><img src="${esc(image)}" alt="${esc(t(product.name))} ${esc(ui("specifications"))}" loading="lazy" /></button>`).join("")}
+              ${product.specImages.map((image, index) => `<button class="gallery-trigger spec-card reveal" type="button" data-image="${esc(image)}" aria-label="${copy("放大規格圖片", "Enlarge specification image", "ขยายภาพข้อมูลจำเพาะ")} ${index + 1}"><img src="${esc(thumbnailPath(image))}" alt="${esc(t(product.name))} ${esc(ui("specifications"))}" loading="lazy" decoding="async" /></button>`).join("")}
             </div>` : ""}
           <div class="back-link reveal"><a href="${routeHref("products")}">← ${esc(ui("backProducts"))}</a></div>
         </div>
@@ -409,16 +440,16 @@
   }
 
   function renderNews() {
-    setMeta(ui("news"), state.lang === "zh" ? "好利生舊網站歷史消息完整封存。" : "Complete archive of news from the legacy Hou Li Sheng website.");
+    setMeta(ui("news"), copy("好利生產業知識、設備應用與相關消息。", "Hou Li Sheng industry knowledge, equipment applications and news.", "ความรู้ในอุตสาหกรรม การใช้อุปกรณ์ และข่าวสารจากโฮ่ว ลี่ เซิง"));
     return `
-      ${renderPageHero(state.lang === "zh" ? "完整保留舊站發布內容" : "LEGACY CONTENT, FULLY PRESERVED", ui("news"), "public/assets/legacy/54_drpf.jpg")}
+      ${renderPageHero(copy("產業觀察與技術資訊", "INDUSTRY INSIGHTS", "ข้อมูลเชิงลึกและเทคโนโลยีอุตสาหกรรม"), ui("news"), "public/assets/optimized/54_drpf.webp")}
       <section class="section news-index">
         <div class="container news-layout">
           <aside class="archive-aside reveal">
-            <p class="eyebrow">2016 ARCHIVE</p>
-            <h2>${state.lang === "zh" ? "歷史消息封存" : "Historical news archive"}</h2>
-            <p>${state.lang === "zh" ? "此區完整保留舊網站中 11 篇可存取的歷史內容，日期與來源依原站標示。" : "This section preserves all 11 accessible legacy articles. Dates and sources follow the original site."}</p>
-            <strong>11</strong><span>${state.lang === "zh" ? "篇已移轉消息" : "migrated articles"}</span>
+            <p class="eyebrow">NEWS & INSIGHTS</p>
+            <h2>${copy("產業消息整理", "Industry news", "ข่าวสารอุตสาหกรรม")}</h2>
+            <p>${copy("彙整養殖設備、管理效率與相關產業應用資訊。", "Information on livestock equipment, operating efficiency and related industry applications.", "รวบรวมข้อมูลด้านอุปกรณ์ปศุสัตว์ ประสิทธิภาพการจัดการ และการประยุกต์ใช้ในอุตสาหกรรม")}</p>
+            <strong>11</strong><span>${copy("篇產業資訊", "industry articles", "บทความอุตสาหกรรม")}</span>
           </aside>
           <div class="news-list">${state.data.news.map(newsRow).join("")}</div>
         </div>
@@ -442,7 +473,6 @@
           <div class="article-body">
             <p class="article-lead">${esc(t(article.summary))}</p>
             ${article.body.map((paragraph, index) => headingIndexes.has(index) && article.id === 21 ? `<h2>${esc(t(paragraph))}</h2>` : `<p>${esc(t(paragraph))}</p>`).join("")}
-            <div class="archive-note">${state.lang === "zh" ? "此篇內容、日期與來源依公司舊網站原樣封存。" : "Content, date and source are preserved from the legacy company website."}</div>
             <a class="article-back" href="${routeHref("news")}">← ${esc(ui("backNews"))}</a>
           </div>
           <aside class="article-side">
@@ -457,48 +487,52 @@
     const company = state.data.company;
     setMeta(ui("contact"), `${t(company.address)} · ${company.phone}`);
     return `
-      ${renderPageHero(state.lang === "zh" ? "從需求開始，一起找到合適做法" : "LET'S BUILD THE RIGHT SOLUTION", ui("contact"), "public/assets/legacy/17_u2wr.jpg")}
+      ${renderPageHero(copy("從需求開始，一起找到合適做法", "LET'S BUILD THE RIGHT SOLUTION", "เริ่มจากความต้องการ เพื่อหาโซลูชันที่เหมาะสม"), ui("contact"), "public/assets/optimized/17_u2wr.webp")}
       <section class="section contact-intro">
         <div class="container contact-intro-grid">
-          <div>
-            ${sectionHeading(state.lang === "zh" ? "聯絡總公司" : "CONTACT HEADQUARTERS", state.lang === "zh" ? "告訴我們你的尺寸、容量與使用環境" : "Tell us your dimensions, capacity and operating environment", state.lang === "zh" ? "若尚未確定規格也沒關係，我們可以從現場條件開始討論。" : "If specifications are not yet final, we can begin with your site conditions.")}
+          <div class="contact-summary">
+            ${sectionHeading(copy("聯絡總公司", "CONTACT HEADQUARTERS", "ติดต่อสำนักงานใหญ่"), copy("告訴我們你的尺寸、容量與使用環境", "Tell us your dimensions, capacity and operating environment", "แจ้งขนาด ความจุ และสภาพแวดล้อมการใช้งาน"), copy("若尚未確定規格也沒關係，我們可以從現場條件開始討論。", "If specifications are not yet final, we can begin with your site conditions.", "หากยังไม่แน่ใจข้อมูลจำเพาะ เราสามารถเริ่มหารือจากสภาพพื้นที่ของคุณ"))}
             <div class="quick-contact reveal">
               <a href="tel:${esc(company.phone)}">${icons.phone}<span><small>${esc(ui("callUs"))}</small><strong>${esc(company.phone)}</strong></span></a>
               <a href="mailto:${esc(company.email)}">${icons.mail}<span><small>${esc(ui("emailUs"))}</small><strong>${esc(company.email)}</strong></span></a>
             </div>
           </div>
-          <form id="inquiry-form" class="inquiry-form reveal">
-            <div class="form-row"><label>${esc(ui("name"))}<input name="name" autocomplete="name" required /></label><label>${esc(ui("email"))}<input type="email" name="email" autocomplete="email" required /></label></div>
-            <label>${esc(ui("phone"))}<input name="phone" autocomplete="tel" /></label>
-            <label>${esc(ui("message"))}<textarea name="message" rows="5" required></textarea></label>
+          <form id="inquiry-form" class="inquiry-form reveal" novalidate>
+            <div class="form-heading"><p class="eyebrow">${copy("需求諮詢", "PROJECT INQUIRY", "สอบถามโครงการ")}</p><h2>${esc(ui("formTitle"))}</h2><p>${esc(ui("formIntro"))}</p></div>
+            <div class="form-row"><label>${esc(ui("name"))}<input name="name" autocomplete="name" maxlength="100" required /></label><label>${esc(ui("email"))}<input type="email" name="email" autocomplete="email" maxlength="254" required /></label></div>
+            <label>${esc(ui("phone"))}<input name="phone" autocomplete="tel" inputmode="tel" maxlength="40" /></label>
+            <label>${esc(ui("message"))}<textarea name="message" rows="6" maxlength="2000" required></textarea></label>
+            <label class="form-trap" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off" /></label>
             <button class="button button-primary" type="submit"><span>${esc(ui("submit"))}</span>${icons.arrow}</button>
-            <p class="form-hint">${state.lang === "zh" ? "目前使用電子郵件送出；日後可直接串接 Supabase 詢價資料表。" : "Currently submitted by email; ready to connect to a Supabase inquiry table later."}</p>
+            <p class="form-hint">${copy("送出後會開啟電子郵件程式，請確認內容再寄出。", "Your email app will open so you can review the message before sending.", "ระบบจะเปิดโปรแกรมอีเมลเพื่อให้คุณตรวจสอบข้อความก่อนส่ง")}</p>
           </form>
         </div>
       </section>
       <section class="section locations-section">
         <div class="container">
-          ${sectionHeading(state.lang === "zh" ? "區域服務據點" : "REGIONAL LOCATIONS", state.lang === "zh" ? "台灣、泰國與廈門聯絡資訊" : "Contact details for Taiwan, Thailand and Xiamen", "", "center")}
+          ${sectionHeading(copy("區域服務據點", "REGIONAL LOCATIONS", "จุดบริการในภูมิภาค"), copy("台灣、泰國與廈門聯絡資訊", "Contact details for Taiwan, Thailand and Xiamen", "ข้อมูลติดต่อในไต้หวัน ไทย และเซี่ยเหมิน"), "", "center")}
           <div class="location-grid">
             ${state.data.contacts.map((contact, index) => `
               <article class="location-card reveal" style="--delay:${index * 70}ms">
-                <div class="location-image"><img src="${esc(contact.image)}" alt="${esc(t(contact.region))}" loading="lazy" /><span>${esc(t(contact.region))}</span></div>
+                <div class="location-image"><img src="${esc(thumbnailPath(contact.image))}" alt="${esc(t(contact.region))}" loading="lazy" decoding="async" /><span>${esc(t(contact.region))}</span></div>
                 <div class="location-content">
                   <h3>${esc(t(contact.company))}</h3>
-                  <p>${icons.pin}<span>${esc(t(contact.address))}</span></p>
-                  <p>${icons.phone}<a href="tel:${esc(contact.phone)}">${esc(contact.phone)}</a></p>
-                  ${contact.fax ? `<p><span class="contact-key">FAX</span><span>${esc(contact.fax)}</span></p>` : ""}
-                  <p>${icons.mail}<a href="mailto:${esc(contact.email)}">${esc(contact.email)}</a></p>
-                  ${contact.website ? `<p><span class="contact-key">WEB</span><a href="${esc(contact.website)}" target="_blank" rel="noopener">www.hls.co.th</a></p>` : ""}
-                  ${contact.line ? `<p><span class="contact-key">LINE</span><span>${esc(contact.line)}</span></p>` : ""}
+                  <dl class="contact-details">
+                    <div><dt>${esc(ui("address"))}</dt><dd>${esc(t(contact.address))}</dd></div>
+                    <div><dt>${esc(ui("phone"))}</dt><dd><a href="tel:${esc(contact.phone)}">${esc(contact.phone)}</a></dd></div>
+                    ${contact.fax ? `<div><dt>${esc(ui("fax"))}</dt><dd>${esc(contact.fax)}</dd></div>` : ""}
+                    <div><dt>${esc(ui("email"))}</dt><dd><a href="mailto:${esc(contact.email)}">${esc(contact.email)}</a></dd></div>
+                    ${contact.website ? `<div><dt>${esc(ui("website"))}</dt><dd><a href="${esc(contact.website)}" target="_blank" rel="noopener noreferrer">www.hls.co.th</a></dd></div>` : ""}
+                    ${contact.line ? `<div><dt>${esc(ui("line"))}</dt><dd>${esc(contact.line)}</dd></div>` : ""}
+                  </dl>
                 </div>
               </article>`).join("")}
           </div>
         </div>
       </section>
       <section class="map-section">
-        <iframe title="${state.lang === "zh" ? "好利生高雄總公司地圖" : "Map to Hou Li Sheng headquarters"}" src="https://maps.google.com/maps?q=%E9%AB%98%E9%9B%84%E5%B8%82%E5%A4%A7%E5%AF%AE%E5%8D%80%E5%A4%A7%E6%9C%89%E4%B8%80%E8%A1%9733%E8%99%9F&t=&z=14&ie=UTF8&iwloc=&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-        <a class="map-card" href="https://maps.google.com/?q=%E9%AB%98%E9%9B%84%E5%B8%82%E5%A4%A7%E5%AF%AE%E5%8D%80%E5%A4%A7%E6%9C%89%E4%B8%80%E8%A1%9733%E8%99%9F" target="_blank" rel="noopener">${icons.pin}<span><small>${state.lang === "zh" ? "台灣總公司" : "TAIWAN HEADQUARTERS"}</small><strong>${esc(t(company.address))}</strong></span></a>
+        <iframe title="${copy("好利生高雄總公司地圖", "Map to Hou Li Sheng headquarters", "แผนที่สำนักงานใหญ่โฮ่ว ลี่ เซิง ที่เกาสง")}" src="https://maps.google.com/maps?q=%E9%AB%98%E9%9B%84%E5%B8%82%E5%A4%A7%E5%AF%AE%E5%8D%80%E5%A4%A7%E6%9C%89%E4%B8%80%E8%A1%9733%E8%99%9F&t=&z=14&ie=UTF8&iwloc=&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <a class="map-card" href="https://maps.google.com/?q=%E9%AB%98%E9%9B%84%E5%B8%82%E5%A4%A7%E5%AF%AE%E5%8D%80%E5%A4%A7%E6%9C%89%E4%B8%80%E8%A1%9733%E8%99%9F" target="_blank" rel="noopener noreferrer">${icons.pin}<span><small>${copy("台灣總公司", "TAIWAN HEADQUARTERS", "สำนักงานใหญ่ไต้หวัน")}</small><strong>${esc(t(company.address))}</strong></span></a>
       </section>`;
   }
 
@@ -507,7 +541,7 @@
     return `
       <section class="section cta-section">
         <div class="container cta-inner reveal">
-          <div><p class="eyebrow">${state.lang === "zh" ? "有一個 FRP 專案？" : "PLANNING AN FRP PROJECT?"}</p><h2>${state.lang === "zh" ? "從現場條件開始聊聊" : "Let's begin with your site requirements"}</h2></div>
+          <div><p class="eyebrow">${copy("有一個 FRP 專案？", "PLANNING AN FRP PROJECT?", "กำลังวางแผนโครงการ FRP?")}</p><h2>${copy("從現場條件開始聊聊", "Let's begin with your site requirements", "เริ่มพูดคุยจากเงื่อนไขหน้างานของคุณ")}</h2></div>
           <div class="cta-actions"><a href="tel:${esc(company.phone)}">${icons.phone}<span><small>${esc(ui("callUs"))}</small><strong>${esc(company.phone)}</strong></span></a>${buttonLink(routeHref("contact"), ui("contactUs"), "light")}</div>
         </div>
       </section>`;
@@ -515,7 +549,7 @@
 
   function renderNotFound() {
     setMeta("404", "Page not found");
-    return `<section class="not-found"><div><p>404</p><h1>${state.lang === "zh" ? "找不到這個頁面" : "Page not found"}</h1>${buttonLink(routeHref("home"), ui("home"))}</div></section>`;
+    return `<section class="not-found"><div><p>404</p><h1>${copy("找不到這個頁面", "Page not found", "ไม่พบหน้านี้")}</h1>${buttonLink(routeHref("home"), ui("home"))}</div></section>`;
   }
 
   function render() {
@@ -535,10 +569,17 @@
     renderHeader();
     $("#main-content").innerHTML = html;
     renderFooter();
-    document.documentElement.lang = state.lang === "zh" ? "zh-Hant" : "en";
+    document.documentElement.lang = window.HLSLocale.languageTags[state.lang];
     document.body.classList.remove("menu-open");
-    window.scrollTo({ top: 0, behavior: "instant" });
     initReveals();
+    const section = parts[0] === "products" ? requestedSection() : "";
+    if (section) {
+      requestAnimationFrame(() => {
+        document.getElementById(`category-${section}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    } else {
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
   }
 
   function initReveals() {
@@ -566,12 +607,71 @@
     showToast.timer = setTimeout(() => toast.classList.remove("show"), 3600);
   }
 
+  function initWelcomeOverlay() {
+    const overlay = $("#welcome-overlay");
+    if (new URLSearchParams(location.search).has("skipWelcome")) return;
+    try {
+      if (sessionStorage.getItem("hls-welcome-seen")) return;
+    } catch {
+      // The welcome screen can still be shown when storage is unavailable.
+    }
+    $("[data-welcome-hint]", overlay).textContent = ui("welcomeHint");
+    overlay.hidden = false;
+    document.body.classList.add("welcome-open");
+    requestAnimationFrame(() => overlay.classList.add("visible"));
+    $(".welcome-close", overlay).focus();
+  }
+
+  function closeWelcomeOverlay() {
+    const overlay = $("#welcome-overlay");
+    overlay.classList.remove("visible");
+    document.body.classList.remove("welcome-open");
+    try {
+      sessionStorage.setItem("hls-welcome-seen", "1");
+    } catch {
+      // Closing the overlay must work even when storage is unavailable.
+    }
+    setTimeout(() => { overlay.hidden = true; }, 180);
+  }
+
+  function normalizeInput(value, maxLength, multiline = false) {
+    const text = String(value || "").normalize("NFKC");
+    const cleaned = multiline
+      ? text.replace(/\r/g, "").replace(/[\u0000-\u0009\u000B-\u001F\u007F]/g, "")
+      : text.replace(/[\u0000-\u001F\u007F]/g, " ");
+    return cleaned.trim().slice(0, maxLength);
+  }
+
+  function allowFormSubmission() {
+    const rateKey = "hls-inquiry-attempts";
+    const currentTime = Date.now();
+    try {
+      const attempts = JSON.parse(localStorage.getItem(rateKey) || "[]")
+        .map(Number)
+        .filter((timestamp) => Number.isFinite(timestamp) && currentTime - timestamp < 300000);
+      if ((attempts.length && currentTime - attempts.at(-1) < 10000) || attempts.length >= 3) return false;
+      attempts.push(currentTime);
+      localStorage.setItem(rateKey, JSON.stringify(attempts));
+    } catch {
+      // Browser storage is an additional client-side guard, not a requirement.
+    }
+    return true;
+  }
+
   document.addEventListener("click", (event) => {
-    const languageButton = event.target.closest('[data-action="language"]');
+    const welcomeOverlay = event.target.closest("#welcome-overlay");
+    if (welcomeOverlay && (event.target === welcomeOverlay || event.target.closest(".welcome-close"))) {
+      closeWelcomeOverlay();
+      return;
+    }
+
+    const languageButton = event.target.closest("[data-language]");
     if (languageButton) {
-      state.lang = state.lang === "zh" ? "en" : "zh";
-      localStorage.setItem("hls-lang", state.lang);
+      state.lang = window.HLSLocale.supported.includes(languageButton.dataset.language) ? languageButton.dataset.language : "en";
+      try { localStorage.setItem("hls-lang", state.lang); } catch { /* Keep the in-memory selection. */ }
       render();
+      const welcomeHint = $("[data-welcome-hint]");
+      if (welcomeHint) welcomeHint.textContent = ui("welcomeHint");
       return;
     }
 
@@ -584,13 +684,24 @@
 
     if (event.target.closest(".main-nav a")) document.body.classList.remove("menu-open");
 
+    const sectionButton = event.target.closest("[data-product-section]");
+    if (sectionButton) {
+      document.getElementById(`category-${sectionButton.dataset.productSection}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    const scrollTargetButton = event.target.closest("[data-scroll-target]");
+    if (scrollTargetButton) {
+      document.getElementById(scrollTargetButton.dataset.scrollTarget)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
     const galleryButton = event.target.closest(".gallery-trigger");
     if (galleryButton) {
       const dialog = $("#lightbox");
       const image = $("img", dialog);
       image.src = galleryButton.dataset.image;
-      image.alt = galleryButton.dataset.caption || "";
-      $("p", dialog).textContent = galleryButton.dataset.caption || "";
+      image.alt = $("img", galleryButton)?.alt || "";
       dialog.showModal();
       return;
     }
@@ -602,33 +713,74 @@
     if (event.target.id !== "inquiry-form") return;
     event.preventDefault();
     const form = new FormData(event.target);
-    if (!form.get("name") || !form.get("email") || !form.get("message")) {
+    if (form.get("website")) {
+      showToast(ui("tooFast"));
+      return;
+    }
+    if (!event.target.checkValidity()) {
+      event.target.reportValidity();
       showToast(ui("required"));
       return;
     }
-    const subject = state.lang === "zh" ? `網站詢價｜${form.get("name")}` : `Website inquiry | ${form.get("name")}`;
+    const name = normalizeInput(form.get("name"), 100);
+    const email = normalizeInput(form.get("email"), 254);
+    const phone = normalizeInput(form.get("phone"), 40);
+    const message = normalizeInput(form.get("message"), 2000, true);
+    if (!name || !email || !message) {
+      showToast(ui("required"));
+      return;
+    }
+    if (!allowFormSubmission()) {
+      showToast(ui("tooFast"));
+      return;
+    }
+    const subject = `${copy("網站詢價", "Website inquiry", "สอบถามผ่านเว็บไซต์")}｜${name}`;
     const body = [
-      `${ui("name")}: ${form.get("name")}`,
-      `${ui("email")}: ${form.get("email")}`,
-      `${ui("phone")}: ${form.get("phone") || "-"}`,
+      `${ui("name")}: ${name}`,
+      `${ui("email")}: ${email}`,
+      `${ui("phone")}: ${phone || "-"}`,
       "",
       `${ui("message")}:`,
-      form.get("message"),
+      message,
     ].join("\n");
     window.location.href = `mailto:${state.data.company.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     showToast(ui("mailReady"));
   });
 
   window.addEventListener("hashchange", render);
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !$("#welcome-overlay").hidden) closeWelcomeOverlay();
+  });
   $("#lightbox").addEventListener("click", (event) => {
     if (event.target === $("#lightbox")) $("#lightbox").close();
   });
 
-  HLSContentService.getSiteData()
-    .then((data) => {
+  const reloadGuard = $("#reload-guard");
+  if (rapidReloadDelay) {
+    reloadGuard.hidden = false;
+    $("p", reloadGuard).textContent = {
+      zh: "請稍候，網站安全載入中⋯",
+      "zh-CN": "请稍候，网站安全加载中⋯",
+      en: "Please wait while the website loads safely…",
+      th: "โปรดรอสักครู่ ระบบกำลังโหลดเว็บไซต์อย่างปลอดภัย…",
+    }[state.lang];
+  }
+
+  Promise.all([HLSContentService.getSiteData(), delay(rapidReloadDelay)])
+    .then(([data]) => {
       state.data = data;
+      reloadGuard.hidden = true;
       if (!location.hash) history.replaceState(null, "", routeHref("home"));
       render();
+      initWelcomeOverlay();
+      HLSContentService.recordVisit()
+        .then((count) => {
+          if (!Number.isFinite(count)) return;
+          state.visitorCount = count;
+          const counter = $("[data-visitor-count]");
+          if (counter) counter.textContent = new Intl.NumberFormat(window.HLSLocale.languageTags[state.lang]).format(count);
+        })
+        .catch(() => {});
     })
     .catch(() => {
       $("#main-content").innerHTML = "<p class='load-error'>網站內容暫時無法載入，請稍後再試。</p>";
