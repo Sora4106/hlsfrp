@@ -32,6 +32,7 @@
     uploadTarget: "",
     uploadMultiple: true,
   };
+  let refreshPromise = null;
 
   function showStatus(message, isError = false) {
     const status = $("#admin-status");
@@ -40,6 +41,49 @@
     status.classList.add("show");
     clearTimeout(showStatus.timer);
     showStatus.timer = setTimeout(() => status.classList.remove("show"), 4200);
+  }
+
+  function setSaveFeedback(message, kind = "") {
+    const feedback = $("[data-save-feedback]");
+    if (!feedback) return;
+    feedback.textContent = message;
+    feedback.className = `save-feedback ${kind}`.trim();
+  }
+
+  function normalizeSession(session) {
+    if (!session?.access_token) return session;
+    const expiresAt = Number(session.expires_at)
+      || Math.floor(Date.now() / 1000) + (Number(session.expires_in) || 3600);
+    return { ...session, expires_at: expiresAt };
+  }
+
+  function storeSession(session) {
+    state.session = normalizeSession(session);
+    try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(state.session)); } catch { /* Keep the active in-memory login. */ }
+    return state.session;
+  }
+
+  async function activeAccessToken() {
+    if (!state.session?.access_token) throw new Error("請重新登入後再操作。");
+    const expiresAt = Number(state.session.expires_at) * 1000;
+    if (expiresAt > Date.now() + 90000) return state.session.access_token;
+    if (!state.session.refresh_token) throw new Error("登入已過期，請重新登入。");
+
+    if (!refreshPromise) {
+      refreshPromise = window.HLSContentService.refreshSession(state.session.refresh_token)
+        .then((session) => storeSession(session))
+        .finally(() => { refreshPromise = null; });
+    }
+    try {
+      return (await refreshPromise).access_token;
+    } catch {
+      state.session = null;
+      try { sessionStorage.removeItem(SESSION_KEY); } catch { /* Direct-file mode may restrict browser storage. */ }
+      $("#workspace").hidden = true;
+      $("#logout-button").hidden = true;
+      $("#auth-panel").hidden = false;
+      throw new Error("登入已過期，請重新登入後再儲存。");
+    }
   }
 
   function localized(zh = "", en = "", th = "") {
@@ -148,18 +192,22 @@
     });
   }
 
-  async function loadRows() {
+  async function loadRows(selectedId = null) {
     $("#record-list").innerHTML = '<div class="empty-editor"><p>正在載入…</p></div>';
     $("#editor").innerHTML = '<div class="empty-editor"><p>正在載入…</p></div>';
     try {
-      const requests = [window.HLSContentService.getAdminRows(TABLES[state.type], state.session.access_token)];
-      if (state.type === "products") requests.push(window.HLSContentService.getAdminRows(TABLES.categories, state.session.access_token));
+      const token = await activeAccessToken();
+      const requests = [window.HLSContentService.getAdminRows(TABLES[state.type], token)];
+      if (state.type === "products") requests.push(window.HLSContentService.getAdminRows(TABLES.categories, token));
       const [remote, remoteCategories = []] = await Promise.all(requests);
       if (state.type === "products") state.categoryOptions = mergeLocalAndRemote("categories", remoteCategories);
       state.rows = mergeLocalAndRemote(state.type, Array.isArray(remote) ? remote : []);
-      state.selectedIndex = -1;
+      state.selectedIndex = selectedId == null
+        ? -1
+        : state.rows.findIndex((row) => String(row.id) === String(selectedId));
       renderList();
-      renderEmptyEditor();
+      if (state.selectedIndex >= 0) renderEditor(state.rows[state.selectedIndex]);
+      else renderEmptyEditor();
     } catch (error) {
       state.rows = [];
       renderList();
@@ -197,7 +245,7 @@
     return `
       <label>${idLabel}<input name="id" value="${esc(row.id || "")}" maxlength="80" pattern="[a-z0-9][a-z0-9-]{1,79}" ${row.id ? "readonly" : "required"} /></label>
       <label>排序<input type="number" name="sort_order" value="${Number(row.sort_order) || 0}" min="0" max="9999" /></label>
-      <label class="checkbox-label wide"><input type="checkbox" name="published" ${row.published !== false ? "checked" : ""} /> 顯示於網站前台</label>`;
+      <label class="checkbox-label publish-toggle wide"><input type="checkbox" name="published" ${row.published !== false ? "checked" : ""} /> <span><strong>顯示於網站前台</strong><small>未勾選時仍會儲存，但狀態為草稿，訪客看不到。</small></span></label>`;
   }
 
   function listValue(items, lang, separator) {
@@ -238,7 +286,7 @@
       <div class="editor-title"><div><h2>${esc(title)}</h2><p>${esc(subtitle)}</p></div></div>
       <form id="editor-form" class="editor-form">
         <div class="form-grid">${fields}</div>
-        <div class="editor-actions"><button class="secondary-button" type="button" data-action="cancel">取消</button><button class="primary-button" type="submit">儲存內容</button></div>
+        <div class="editor-actions"><p class="save-feedback" data-save-feedback role="status" aria-live="polite"></p><button class="secondary-button" type="button" data-action="cancel">取消</button><button class="primary-button" type="submit">儲存內容</button></div>
       </form>`;
   }
 
@@ -274,7 +322,7 @@
       <label>作者<input name="author" value="${esc(row.author || "")}" maxlength="200" /></label>
       <label>瀏覽次數<input type="number" name="views" value="${Number(row.views) || 0}" min="0" /></label>
       <label>排序<input type="number" name="sort_order" value="${Number(row.sort_order) || 0}" min="0" max="9999" /></label>
-      <label class="checkbox-label"><input type="checkbox" name="published" ${row.published !== false ? "checked" : ""} /> 顯示於網站前台</label>
+      <label class="checkbox-label publish-toggle"><input type="checkbox" name="published" ${row.published !== false ? "checked" : ""} /> <span><strong>顯示於網站前台</strong><small>未勾選時會儲存為草稿。</small></span></label>
       ${localizedFields("title", "消息標題", row.title)}
       ${localizedFields("summary", "消息摘要", row.summary, true)}
       ${localizedFields("source", "消息來源", row.source)}
@@ -414,16 +462,28 @@
 
   async function saveEditor(formElement) {
     const button = $('button[type="submit"]', formElement);
+    const originalLabel = button.textContent;
     button.disabled = true;
+    button.textContent = "儲存中…";
+    setSaveFeedback("正在寫入 Supabase，請稍候…", "saving");
+    showStatus("正在儲存內容…");
     try {
       const row = rowFromForm(new FormData(formElement));
       delete row._local;
-      await window.HLSContentService.saveAdminRow(TABLES[state.type], row, state.session.access_token);
-      showStatus("內容已儲存。前台重新整理後即可看到最新資料。");
-      await loadRows();
+      const token = await activeAccessToken();
+      const response = await window.HLSContentService.saveAdminRow(TABLES[state.type], row, token);
+      const saved = Array.isArray(response) ? response[0] : response;
+      const savedId = saved?.id ?? row.id;
+      await loadRows(savedId);
+      const stateLabel = state.type === "inquiries" ? "處理狀態已更新" : row.published ? "已發布" : "已儲存為草稿";
+      setSaveFeedback(`✓ 儲存成功 · ${stateLabel} · ${new Date().toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" })}`, "success");
+      showStatus(`儲存成功：${stateLabel}。`);
     } catch (error) {
-      showStatus(`儲存失敗：${error.message}`, true);
+      const message = `儲存失敗：${error.message}`;
+      setSaveFeedback(message, "error");
+      showStatus(message, true);
       button.disabled = false;
+      button.textContent = originalLabel;
     }
   }
 
@@ -679,7 +739,8 @@
     try {
       for (let start = 0; start < records.length; start += 4) {
         const batch = records.slice(start, start + 4);
-        await Promise.all(batch.map((row) => window.HLSContentService.saveAdminRow(TABLES[state.type], row, state.session.access_token)));
+        const token = await activeAccessToken();
+        await Promise.all(batch.map((row) => window.HLSContentService.saveAdminRow(TABLES[state.type], row, token)));
         saved += batch.length;
         showStatus(`正在匯入：${saved}/${records.length} 筆`);
       }
@@ -791,7 +852,7 @@
           originalName: converted.originalName,
           width: converted.width,
           height: converted.height,
-        }, state.session.access_token);
+        }, await activeAccessToken());
         uploadedUrls.push(media.public_url);
       }
       setUploadedUrls(state.uploadTarget, uploadedUrls, state.uploadMultiple);
@@ -829,7 +890,7 @@
     if (!window.confirm(`確定永久刪除「${media.original_name}」嗎？此動作無法復原。`)) return;
     try {
       showStatus("正在檢查並刪除圖片…");
-      await window.HLSContentService.deleteMedia(media, state.session.access_token);
+      await window.HLSContentService.deleteMedia(media, await activeAccessToken());
       await loadRows();
       showStatus("圖片已從 Supabase Storage 與圖片紀錄中刪除。 ");
     } catch (error) {
@@ -855,7 +916,7 @@
   function readStoredSession() {
     try {
       const session = JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null");
-      if (session?.access_token && Number(session.expires_at) * 1000 > Date.now() + 30000) return session;
+      if (session?.access_token && session?.refresh_token) return normalizeSession(session);
     } catch {
       // A damaged browser session simply requires another login.
     }
@@ -864,8 +925,7 @@
   }
 
   async function enterWorkspace(session) {
-    state.session = session;
-    try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(session)); } catch { /* Keep the active in-memory login. */ }
+    storeSession(session);
     $("#auth-panel").hidden = true;
     $("#workspace").hidden = false;
     $("#logout-button").hidden = false;
@@ -1008,6 +1068,9 @@
     if (event.target.id === "editor-form") {
       event.preventDefault();
       if (!event.target.checkValidity()) {
+        const message = "尚有必填欄位未完成，請依瀏覽器標示補齊後再儲存。";
+        setSaveFeedback(message, "error");
+        showStatus(message, true);
         event.target.reportValidity();
         return;
       }

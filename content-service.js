@@ -156,6 +156,14 @@
     });
   }
 
+  async function refreshSession(refreshToken) {
+    if (!refreshToken) throw new Error("登入已過期，請重新登入。");
+    return apiRequest("/auth/v1/token?grant_type=refresh_token", {
+      method: "POST",
+      body: { refresh_token: refreshToken },
+    });
+  }
+
   async function signOut(token) {
     if (!token) return;
     await apiRequest("/auth/v1/logout", { method: "POST", token });
@@ -308,6 +316,7 @@
     getSiteData,
     recordInquiry,
     signIn,
+    refreshSession,
     signOut,
     getAdminRows,
     saveAdminRow,

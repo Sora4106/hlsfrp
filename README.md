@@ -39,6 +39,7 @@ python scripts/dom-smoke-test.py
 node --check app.js
 node --check admin.js
 node --check content-service.js
+node scripts/admin-save-smoke-test.js
 node scripts/media-smoke-test.js
 node scripts/portable-admin-smoke-test.js
 ```

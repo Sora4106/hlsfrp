@@ -58,6 +58,9 @@ async function testStorageWorkflow() {
     fetch: async (url, options = {}) => {
       requests.push({ url, options });
       if (url.includes("hls_get_media_usage")) return response(usage);
+      if (url.includes("grant_type=refresh_token")) {
+        return response({ access_token: "new-access-token", refresh_token: "new-refresh-token", expires_in: 3600 });
+      }
       if (url.includes("/rest/v1/hls_media") && options.method === "POST") {
         return response([{ id: "media-id", ...JSON.parse(options.body) }]);
       }
@@ -84,6 +87,11 @@ async function testStorageWorkflow() {
 
   await context.window.HLSContentService.deleteMedia(media, "admin-token");
   assert.ok(requests.some((item) => item.url.includes("/storage/v1/object/hls-site-assets/") && item.options.method === "DELETE"));
+
+  const refreshed = await context.window.HLSContentService.refreshSession("old-refresh-token");
+  assert.equal(refreshed.access_token, "new-access-token");
+  const refreshRequest = requests.find((item) => item.url.includes("grant_type=refresh_token"));
+  assert.deepEqual(JSON.parse(refreshRequest.options.body), { refresh_token: "old-refresh-token" });
 
   const requestCount = requests.length;
   usage = { categories: 0, products: 1, locations: 0 };
