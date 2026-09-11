@@ -662,7 +662,7 @@
 
   document.addEventListener("click", (event) => {
     const welcomeOverlay = event.target.closest("#welcome-overlay");
-    if (welcomeOverlay && (event.target === welcomeOverlay || event.target.closest(".welcome-close"))) {
+    if (welcomeOverlay) {
       closeWelcomeOverlay();
       return;
     }

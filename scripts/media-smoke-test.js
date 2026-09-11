@@ -42,6 +42,7 @@ async function testWebpConversion() {
 async function testStorageWorkflow() {
   const requests = [];
   let usage = { categories: 0, products: 0, locations: 0 };
+  let duplicateRows = [];
   const response = (payload, status = 200) => ({
     ok: status >= 200 && status < 300,
     status,
@@ -61,6 +62,9 @@ async function testStorageWorkflow() {
       if (url.includes("grant_type=refresh_token")) {
         return response({ access_token: "new-access-token", refresh_token: "new-refresh-token", expires_in: 3600 });
       }
+      if (url.includes("/rest/v1/hls_media") && (!options.method || options.method === "GET")) {
+        return response(duplicateRows);
+      }
       if (url.includes("/rest/v1/hls_media") && options.method === "POST") {
         return response([{ id: "media-id", ...JSON.parse(options.body) }]);
       }
@@ -77,13 +81,24 @@ async function testStorageWorkflow() {
 
   const media = await context.window.HLSContentService.uploadMedia(
     new Blob(["webp"], { type: "image/webp" }),
-    { folder: "products", originalName: "product.png", width: 800, height: 600 },
+    { folder: "products", originalName: "product.png", originalSize: 2048, width: 800, height: 600 },
     "admin-token"
   );
   assert.equal(media.mime_type, "image/webp");
+  assert.equal(media.original_size_bytes, 2048);
   assert.match(media.public_url, /storage\/v1\/object\/public\/hls-site-assets\/products\//);
   assert.equal(requests[0].options.headers["Content-Type"], "image/webp");
   assert.ok(requests.some((item) => item.url.includes("/rest/v1/hls_media")), "hls_media metadata was not written");
+
+  duplicateRows = [media];
+  assert.equal(
+    (await context.window.HLSContentService.findDuplicateMedia("product.png", 2048, media.size_bytes, "admin-token")).id,
+    "media-id"
+  );
+  assert.equal(
+    await context.window.HLSContentService.findDuplicateMedia("product.png", 4096, media.size_bytes + 1, "admin-token"),
+    null
+  );
 
   await context.window.HLSContentService.deleteMedia(media, "admin-token");
   assert.ok(requests.some((item) => item.url.includes("/storage/v1/object/hls-site-assets/") && item.options.method === "DELETE"));

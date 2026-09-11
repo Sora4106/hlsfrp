@@ -86,6 +86,7 @@ create table if not exists public.hls_media (
   storage_path text not null unique,
   public_url text not null unique,
   original_name text not null check (char_length(original_name) between 1 and 500),
+  original_size_bytes bigint,
   mime_type text not null default 'image/webp' check (mime_type = 'image/webp'),
   width integer not null check (width between 1 and 30000),
   height integer not null check (height between 1 and 30000),
@@ -94,11 +95,28 @@ create table if not exists public.hls_media (
   created_at timestamptz not null default now()
 );
 
+alter table public.hls_media add column if not exists original_size_bytes bigint;
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'hls_media_original_size_check'
+      and conrelid = 'public.hls_media'::regclass
+  ) then
+    alter table public.hls_media add constraint hls_media_original_size_check
+      check (original_size_bytes is null or original_size_bytes between 1 and 26214400);
+  end if;
+end;
+$$;
+
 create index if not exists hls_products_category_order_idx on public.hls_products(category_id, sort_order);
 create index if not exists hls_news_published_date_idx on public.hls_news(published, published_at desc);
 create index if not exists hls_locations_published_order_idx on public.hls_locations(published, sort_order);
 create index if not exists hls_inquiries_status_created_idx on public.hls_inquiries(status, created_at desc);
 create index if not exists hls_media_created_at_idx on public.hls_media(created_at desc);
+create unique index if not exists hls_media_original_signature_idx
+on public.hls_media (lower(original_name), original_size_bytes)
+where original_size_bytes is not null;
 
 create or replace function public.hls_set_updated_at()
 returns trigger

@@ -97,8 +97,8 @@
           view().location.href = "/#/home";
           await new Promise((resolve) => frame.addEventListener("load", resolve, { once: true }));
           await waitFor(() => page().querySelector("#welcome-overlay") && !page().querySelector("#welcome-overlay").hidden, "Welcome foreground did not open");
-          page().querySelector("#welcome-overlay").click();
-          await waitFor(() => page().querySelector("#welcome-overlay").hidden, "Welcome foreground did not close from its background");
+          page().querySelector(".welcome-logo img").click();
+          await waitFor(() => page().querySelector("#welcome-overlay").hidden, "Welcome foreground did not close when its logo was clicked");
 
           result.dataset.status = "pass";
           result.textContent = "PASS";

@@ -2242,6 +2242,7 @@ svg {
   opacity: 0;
   backdrop-filter: blur(10px);
   transition: opacity 180ms ease;
+  cursor: pointer;
 }
 
 .welcome-overlay.visible {

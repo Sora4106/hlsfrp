@@ -247,6 +247,7 @@
       storage_path: storagePath,
       public_url: mediaPublicUrl(storagePath),
       original_name: String(details.originalName || "image").slice(0, 500),
+      original_size_bytes: Number(details.originalSize) || blob.size,
       mime_type: "image/webp",
       width: details.width,
       height: details.height,
@@ -262,8 +263,25 @@
       return Array.isArray(rows) ? rows[0] : { ...media, ...rows };
     } catch (error) {
       try { await removeStorageObject(storagePath, token); } catch { /* Avoid masking the metadata error. */ }
+      if (/duplicate key|hls_media_original_signature_idx|23505/i.test(error.message)) {
+        throw new Error("相同檔名與檔案大小的圖片已存在，請改從圖片庫選擇。");
+      }
       throw error;
     }
+  }
+
+  async function findDuplicateMedia(originalName, originalSize, convertedSize, token) {
+    const name = String(originalName || "").trim();
+    const sourceBytes = Number(originalSize) || 0;
+    if (!name || !sourceBytes) return null;
+    const rows = await apiRequest(
+      `/rest/v1/${TABLES.media}?select=*&original_name=eq.${encodeURIComponent(name)}&limit=50`,
+      { token }
+    );
+    return (Array.isArray(rows) ? rows : []).find((row) => {
+      if (row.original_size_bytes != null) return Number(row.original_size_bytes) === sourceBytes;
+      return convertedSize != null && Number(row.size_bytes) === Number(convertedSize);
+    }) || null;
   }
 
   async function getMediaUsage(publicUrl, token) {
@@ -321,6 +339,7 @@
     getAdminRows,
     saveAdminRow,
     uploadMedia,
+    findDuplicateMedia,
     getMediaUsage,
     deleteMedia,
     recordVisit,

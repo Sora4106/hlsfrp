@@ -22,7 +22,7 @@
     <header class="admin-topbar">
       <a class="admin-brand" href="index.html#/home">
         <img src="public/assets/optimized/11_n090.webp" width="259" height="154" alt="" />
-        <span><strong>好利生內容管理</strong><small>HLS CONTENT STUDIO</small></span>
+        <span><strong>好利生內容管理</strong><small>HLS CONTENT STUDIO · ADMIN 1.3.0</small></span>
       </a>
       <div class="admin-actions">
         <a href="index.html#/home">查看網站</a>
@@ -67,6 +67,9 @@
           <button type="button" data-type="media">圖片庫</button>
           <button type="button" data-type="inquiries">詢價紀錄</button>
         </nav>
+        <div id="admin-activity" class="admin-activity" role="status" aria-live="polite">
+          <strong>系統狀態</strong><span>尚未進行儲存操作。</span>
+        </div>
         <section id="gpt-transfer" class="gpt-transfer" aria-labelledby="gpt-transfer-title">
           <div class="gpt-transfer-copy">
             <p class="admin-eyebrow">GPT CONTENT WORKFLOW</p>
@@ -75,6 +78,7 @@
           </div>
           <div class="gpt-transfer-actions">
             <button id="export-template" class="secondary-button" type="button">下載新增範本</button>
+            <a class="secondary-button gpt-site-link" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">開啟 ChatGPT ↗</a>
             <button id="export-current" class="secondary-button" type="button">匯出目前資料</button>
             <label id="import-drop-zone" class="import-drop-zone" tabindex="0">
               <input id="import-file" type="file" accept="application/json,.json" />
@@ -97,6 +101,20 @@
         </div>
       </section>
     </main>
+    <dialog id="media-picker" class="media-picker" aria-labelledby="media-picker-title">
+      <div class="media-picker-shell">
+        <header class="media-picker-header">
+          <div><p class="admin-eyebrow">SUPABASE MEDIA</p><h2 id="media-picker-title">從圖片庫選擇</h2></div>
+          <button class="media-picker-close" type="button" data-action="close-media-picker" aria-label="關閉圖片庫">×</button>
+        </header>
+        <label class="media-picker-search">搜尋原始檔名<input id="media-picker-search" type="search" placeholder="輸入圖片名稱…" maxlength="200" autocomplete="off" /></label>
+        <div id="media-picker-grid" class="media-picker-grid"><p>正在讀取圖片庫…</p></div>
+        <footer class="media-picker-footer">
+          <span id="media-picker-count">尚未選擇圖片</span>
+          <button id="apply-media-selection" class="primary-button" type="button" data-action="apply-media-selection">加入已選圖片</button>
+        </footer>
+      </div>
+    </dialog>
     <input id="media-upload-input" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,image/avif" multiple hidden />
     <div id="admin-status" class="admin-status" role="status" aria-live="polite"></div>
   </body>

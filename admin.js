@@ -31,6 +31,8 @@
     session: null,
     uploadTarget: "",
     uploadMultiple: true,
+    pickerRows: [],
+    pickerSelected: new Set(),
   };
   let refreshPromise = null;
 
@@ -41,6 +43,13 @@
     status.classList.add("show");
     clearTimeout(showStatus.timer);
     showStatus.timer = setTimeout(() => status.classList.remove("show"), 4200);
+    const activity = $("#admin-activity");
+    if (activity) {
+      activity.classList.toggle("error", isError);
+      activity.classList.toggle("success", !isError && /成功|完成|已儲存|已發布/.test(message));
+      const text = $("span", activity);
+      if (text) text.textContent = `${new Date().toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}　${message}`;
+    }
   }
 
   function setSaveFeedback(message, kind = "") {
@@ -275,6 +284,7 @@
         <label>${esc(label)}${control}</label>
         <div class="image-field-actions">
           <button class="secondary-button" type="button" data-action="upload-media" data-upload-target="${name}" data-upload-multiple="${multiple}">選擇圖片並轉成 WebP</button>
+          <button class="secondary-button" type="button" data-action="choose-existing-media" data-upload-target="${name}" data-upload-multiple="${multiple}">從圖片庫選擇</button>
           <span>${multiple ? "可選多張；每行會自動填入一個網址。" : "新圖片會取代欄位中的網址。"}</span>
         </div>
         <div class="image-preview" data-image-preview="${name}">${imagePreview(urls)}</div>
@@ -284,9 +294,9 @@
   function editorShell(title, subtitle, fields) {
     return `
       <div class="editor-title"><div><h2>${esc(title)}</h2><p>${esc(subtitle)}</p></div></div>
-      <form id="editor-form" class="editor-form">
+      <form id="editor-form" class="editor-form" novalidate>
         <div class="form-grid">${fields}</div>
-        <div class="editor-actions"><p class="save-feedback" data-save-feedback role="status" aria-live="polite"></p><button class="secondary-button" type="button" data-action="cancel">取消</button><button class="primary-button" type="submit">儲存內容</button></div>
+        <div class="editor-actions"><p class="save-feedback" data-save-feedback role="status" aria-live="polite"></p><button class="secondary-button" type="button" data-action="cancel">取消</button><button class="primary-button" type="submit" data-action="save-content">儲存內容</button></div>
       </form>`;
   }
 
@@ -364,7 +374,8 @@
         <dl>
           <div><dt>格式</dt><dd>WebP</dd></div>
           <div><dt>尺寸</dt><dd>${Number(row.width) || 0} × ${Number(row.height) || 0}px</dd></div>
-          <div><dt>檔案大小</dt><dd>${formatBytes(row.size_bytes)}</dd></div>
+          <div><dt>原始檔案大小</dt><dd>${row.original_size_bytes == null ? "舊資料未記錄" : formatBytes(row.original_size_bytes)}</dd></div>
+          <div><dt>WebP 檔案大小</dt><dd>${formatBytes(row.size_bytes)}</dd></div>
           <div><dt>上傳時間</dt><dd>${row.created_at ? new Date(row.created_at).toLocaleString("zh-TW") : ""}</dd></div>
         </dl>
         <label>公開圖片網址<input value="${esc(row.public_url || "")}" readonly /></label>
@@ -482,8 +493,26 @@
       const message = `儲存失敗：${error.message}`;
       setSaveFeedback(message, "error");
       showStatus(message, true);
+      window.alert(message);
       button.disabled = false;
       button.textContent = originalLabel;
+    }
+  }
+
+  async function submitEditorForm(form) {
+    if (!form || form.dataset.saving === "true") return;
+    if (!form.checkValidity()) {
+      const message = "無法儲存：尚有必填欄位未完成或格式不正確。";
+      setSaveFeedback(message, "error");
+      showStatus(message, true);
+      form.reportValidity();
+      return;
+    }
+    form.dataset.saving = "true";
+    try {
+      await saveEditor(form);
+    } finally {
+      delete form.dataset.saving;
     }
   }
 
@@ -834,6 +863,78 @@
     field.dispatchEvent(new Event("input", { bubbles: true }));
   }
 
+  function renderMediaPicker() {
+    const query = String($("#media-picker-search").value || "").trim().toLocaleLowerCase();
+    const rows = state.pickerRows.filter((row) => !query || String(row.original_name || "").toLocaleLowerCase().includes(query));
+    $("#media-picker-grid").innerHTML = rows.length
+      ? rows.map((row) => {
+          const selected = state.pickerSelected.has(row.public_url);
+          return `
+            <button class="media-picker-card ${selected ? "selected" : ""}" type="button" data-action="select-existing-media" data-media-id="${esc(row.id)}" aria-pressed="${selected}">
+              <img src="${esc(row.public_url)}" alt="" loading="lazy" />
+              <span><strong>${esc(row.original_name || "圖片")}</strong><small>${Number(row.width) || 0} × ${Number(row.height) || 0}px · ${formatBytes(row.size_bytes)}</small></span>
+            </button>`;
+        }).join("")
+      : '<p class="media-picker-empty">找不到符合的圖片。</p>';
+    $("#media-picker-count").textContent = state.pickerSelected.size
+      ? `已選擇 ${state.pickerSelected.size} 張圖片`
+      : "尚未選擇圖片";
+  }
+
+  function closeMediaPicker() {
+    const dialog = $("#media-picker");
+    if (dialog.open) dialog.close();
+    state.pickerRows = [];
+    state.pickerSelected = new Set();
+    state.uploadTarget = "";
+    state.uploadMultiple = true;
+    $("#media-picker-search").value = "";
+  }
+
+  async function openMediaPicker(target, multiple) {
+    state.uploadTarget = target;
+    state.uploadMultiple = multiple;
+    state.pickerRows = [];
+    state.pickerSelected = new Set();
+    $("#media-picker-grid").innerHTML = "<p>正在讀取圖片庫…</p>";
+    $("#media-picker-count").textContent = "尚未選擇圖片";
+    $("#apply-media-selection").hidden = !multiple;
+    $("#media-picker").showModal();
+    try {
+      const token = await activeAccessToken();
+      state.pickerRows = await window.HLSContentService.getAdminRows(TABLES.media, token);
+      renderMediaPicker();
+    } catch (error) {
+      $("#media-picker-grid").innerHTML = `<p class="media-picker-empty error">無法讀取圖片庫：${esc(error.message)}</p>`;
+      showStatus(`無法讀取圖片庫：${error.message}`, true);
+    }
+  }
+
+  function selectExistingMedia(mediaId) {
+    const row = state.pickerRows.find((item) => String(item.id) === String(mediaId));
+    if (!row) return;
+    if (!state.uploadMultiple) {
+      setUploadedUrls(state.uploadTarget, [row.public_url], false);
+      closeMediaPicker();
+      showStatus("已從圖片庫選用圖片；請按「儲存內容」完成套用。");
+      return;
+    }
+    if (state.pickerSelected.has(row.public_url)) state.pickerSelected.delete(row.public_url);
+    else state.pickerSelected.add(row.public_url);
+    renderMediaPicker();
+  }
+
+  function applyMediaSelection() {
+    const urls = [...state.pickerSelected];
+    if (!urls.length) {
+      showStatus("請至少選擇一張圖片。", true);
+      return;
+    }
+    setUploadedUrls(state.uploadTarget, urls, true);
+    closeMediaPicker();
+    showStatus(`已從圖片庫加入 ${urls.length} 張圖片；請按「儲存內容」完成套用。`);
+  }
+
   async function uploadImageFiles(fileList) {
     const files = Array.from(fileList || []);
     if (!files.length) return;
@@ -842,22 +943,49 @@
     const input = $("#media-upload-input");
     input.disabled = true;
     const uploadedUrls = [];
+    const skippedDuplicates = [];
     try {
+      const token = await activeAccessToken();
       for (let index = 0; index < selected.length; index += 1) {
         const file = selected[index];
-        showStatus(`正在轉換並上傳 ${index + 1}/${selected.length}：${file.name}`);
+        showStatus(`正在檢查、轉換並上傳 ${index + 1}/${selected.length}：${file.name}`);
         const converted = await convertToWebp(file);
-        const media = await window.HLSContentService.uploadMedia(converted.blob, {
-          folder: ["products", "categories", "locations"].includes(state.type) ? state.type : "library",
-          originalName: converted.originalName,
-          width: converted.width,
-          height: converted.height,
-        }, await activeAccessToken());
-        uploadedUrls.push(media.public_url);
+        const duplicate = await window.HLSContentService.findDuplicateMedia(
+          converted.originalName,
+          file.size,
+          converted.blob.size,
+          token
+        );
+        if (duplicate) {
+          skippedDuplicates.push(file.name);
+          continue;
+        }
+        try {
+          const media = await window.HLSContentService.uploadMedia(converted.blob, {
+            folder: ["products", "categories", "locations"].includes(state.type) ? state.type : "library",
+            originalName: converted.originalName,
+            originalSize: file.size,
+            width: converted.width,
+            height: converted.height,
+          }, token);
+          uploadedUrls.push(media.public_url);
+        } catch (error) {
+          if (/相同檔名與檔案大小/.test(error.message)) {
+            skippedDuplicates.push(file.name);
+            continue;
+          }
+          throw error;
+        }
       }
       setUploadedUrls(state.uploadTarget, uploadedUrls, state.uploadMultiple);
       if (state.type === "media") await loadRows();
-      showStatus(`${uploadedUrls.length} 張圖片已轉成 WebP 並存入圖片庫。`);
+      if (skippedDuplicates.length) {
+        const message = `${uploadedUrls.length} 張已上傳；${skippedDuplicates.length} 張因檔名與檔案大小相同而略過：${skippedDuplicates.join("、")}。可使用「從圖片庫選擇」。`;
+        showStatus(message, uploadedUrls.length === 0);
+        window.alert(message);
+      } else {
+        showStatus(`${uploadedUrls.length} 張圖片已轉成 WebP 並存入圖片庫。`);
+      }
     } catch (error) {
       if (state.type === "media") await loadRows();
       showStatus(`圖片處理失敗：${error.message}`, true);
@@ -944,6 +1072,33 @@
   }
 
   document.addEventListener("click", (event) => {
+    const saveButton = event.target.closest('[data-action="save-content"]');
+    if (saveButton) {
+      event.preventDefault();
+      submitEditorForm(saveButton.closest("form"));
+      return;
+    }
+    const existingMediaButton = event.target.closest('[data-action="choose-existing-media"]');
+    if (existingMediaButton) {
+      openMediaPicker(
+        existingMediaButton.dataset.uploadTarget || "",
+        existingMediaButton.dataset.uploadMultiple !== "false"
+      );
+      return;
+    }
+    if (event.target.closest('[data-action="close-media-picker"]')) {
+      closeMediaPicker();
+      return;
+    }
+    const mediaChoice = event.target.closest('[data-action="select-existing-media"]');
+    if (mediaChoice) {
+      selectExistingMedia(mediaChoice.dataset.mediaId);
+      return;
+    }
+    if (event.target.closest('[data-action="apply-media-selection"]')) {
+      applyMediaSelection();
+      return;
+    }
     const uploadButton = event.target.closest('[data-action="upload-media"]');
     if (uploadButton) {
       state.uploadTarget = uploadButton.dataset.uploadTarget || "";
@@ -1010,6 +1165,14 @@
   });
 
   $("#media-upload-input").addEventListener("change", (event) => uploadImageFiles(event.target.files));
+  $("#media-picker-search").addEventListener("input", renderMediaPicker);
+  $("#media-picker").addEventListener("close", () => {
+    state.pickerRows = [];
+    state.pickerSelected = new Set();
+    state.uploadTarget = "";
+    state.uploadMultiple = true;
+    $("#media-picker-search").value = "";
+  });
   document.addEventListener("dragover", (event) => {
     const mediaDropZone = event.target.closest("[data-media-drop]");
     if (!mediaDropZone) return;
@@ -1067,14 +1230,7 @@
     }
     if (event.target.id === "editor-form") {
       event.preventDefault();
-      if (!event.target.checkValidity()) {
-        const message = "尚有必填欄位未完成，請依瀏覽器標示補齊後再儲存。";
-        setSaveFeedback(message, "error");
-        showStatus(message, true);
-        event.target.reportValidity();
-        return;
-      }
-      await saveEditor(event.target);
+      await submitEditorForm(event.target);
     }
   });
 

@@ -193,7 +193,7 @@
     line: "LINE",
     formTitle: "專案需求表",
     formIntro: "填寫以下資訊，我們會從用途與現場條件協助評估。",
-    welcomeHint: "點擊畫面周圍進入網站",
+    welcomeHint: "點擊畫面任意位置進入網站",
     languageLabel: "選擇網站語言",
   };
 
@@ -238,7 +238,7 @@
     line: "LINE",
     formTitle: "Project inquiry",
     formIntro: "Share the intended use and site conditions so we can help evaluate your needs.",
-    welcomeHint: "Click outside the panel to enter the website",
+    welcomeHint: "Click anywhere to enter the website",
     languageLabel: "Choose website language",
   };
 
@@ -283,7 +283,7 @@
     line: "LINE",
     formTitle: "แบบสอบถามโครงการ",
     formIntro: "แจ้งวัตถุประสงค์และสภาพพื้นที่ เพื่อให้เราช่วยประเมินความต้องการ",
-    welcomeHint: "คลิกพื้นที่ด้านนอกเพื่อเข้าสู่เว็บไซต์",
+    welcomeHint: "คลิกที่ใดก็ได้เพื่อเข้าสู่เว็บไซต์",
     languageLabel: "เลือกภาษาของเว็บไซต์",
   };
 

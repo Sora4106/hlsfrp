@@ -26,7 +26,7 @@ Supabase 的完整啟用步驟請見 [docs/supabase-setup.md](docs/supabase-setu
 
 ## 圖片管理
 
-管理頁的「圖片庫」可批次拖曳一般圖片，產品、分類與據點編輯表單也可直接選圖。瀏覽器會先將圖片最長邊縮至 2400px 並轉成 WebP，再把檔案存入公開的 Supabase Storage bucket `hls-site-assets`；`hls_media` 資料表保存圖片索引與公開網址。仍被內容引用的圖片不允許刪除。
+管理頁的「圖片庫」可批次拖曳一般圖片，產品、分類與據點編輯表單也可直接上傳或從圖片庫搜尋既有圖片。瀏覽器會先將圖片最長邊縮至 2400px 並轉成 WebP，再把檔案存入公開的 Supabase Storage bucket `hls-site-assets`；`hls_media` 資料表保存圖片索引與公開網址。原始檔名及原始檔案大小都相同時會略過重複上傳，同批其他圖片不受影響；仍被內容引用的圖片不允許刪除。
 
 ## 發布
 

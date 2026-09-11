@@ -15,5 +15,13 @@ assert.doesNotMatch(html, /<link[^>]+rel=["']stylesheet/i, "portable admin shoul
 assert.match(html, /hls_media/);
 assert.match(html, /data-media-drop/);
 assert.match(html, /image\/webp/);
+assert.match(html, /ADMIN 1\.3\.0/);
+assert.match(html, /id="admin-activity"/);
+assert.match(html, /data-action="save-content"/);
+assert.match(html, /id="editor-form" class="editor-form" novalidate/);
+assert.match(html, /href="https:\/\/chatgpt\.com\/"/);
+assert.match(html, /id="media-picker"/);
+assert.match(html, /data-action="choose-existing-media"/);
+assert.match(html, /findDuplicateMedia/);
 
 console.log("Portable admin static check passed.");
