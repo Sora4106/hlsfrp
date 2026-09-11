@@ -7,3 +7,5 @@ old-sitemap.xml
 Thumbs.db
 .vscode/
 
+# Generated single-file admin handoff (contains project-specific public settings)
+portable-admin/

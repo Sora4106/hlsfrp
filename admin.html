@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b7daf" />
+    <meta name="robots" content="noindex,nofollow,noarchive" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"
+    />
+    <link rel="icon" href="public/assets/legacy/www.ico" />
+    <link rel="stylesheet" href="admin.css" />
+    <title>好利生網站內容管理</title>
+    <script src="localization.js" defer></script>
+    <script src="content.js" defer></script>
+    <script src="supabase-config.js" defer></script>
+    <script src="content-service.js" defer></script>
+    <script src="admin.js" defer></script>
+  </head>
+  <body>
+    <header class="admin-topbar">
+      <a class="admin-brand" href="index.html#/home">
+        <img src="public/assets/optimized/11_n090.webp" width="259" height="154" alt="" />
+        <span><strong>好利生內容管理</strong><small>HLS CONTENT STUDIO</small></span>
+      </a>
+      <div class="admin-actions">
+        <a href="index.html#/home">查看網站</a>
+        <button id="logout-button" type="button" hidden>登出</button>
+      </div>
+    </header>
+
+    <main class="admin-main">
+      <section id="config-notice" class="notice" hidden>
+        <strong>尚未設定 Supabase</strong>
+        <p>第一次使用時貼上 Project URL 與 Publishable Key；設定只會保存在這台電腦的瀏覽器中。</p>
+        <form id="config-form" class="config-form">
+          <label>Project URL<input type="url" name="url" placeholder="https://YOUR_PROJECT.supabase.co" maxlength="500" required /></label>
+          <label>Publishable Key<input name="anonKey" placeholder="sb_publishable_..." maxlength="1000" required /></label>
+          <button class="primary-button" type="submit">儲存並開始使用</button>
+        </form>
+      </section>
+
+      <section id="auth-panel" class="auth-panel">
+        <div>
+          <p class="admin-eyebrow">SECURE ADMIN</p>
+          <h1>登入內容管理</h1>
+          <p>使用已加入 <code>hls_admins</code> 的 Supabase 帳號登入。</p>
+        </div>
+        <form id="login-form">
+          <label>電子郵件<input type="email" name="email" autocomplete="username" maxlength="254" required /></label>
+          <label>密碼<input type="password" name="password" autocomplete="current-password" minlength="8" maxlength="200" required /></label>
+          <button class="primary-button" type="submit">登入</button>
+        </form>
+      </section>
+
+      <section id="workspace" class="workspace" hidden>
+        <div class="workspace-heading">
+          <div><p class="admin-eyebrow">CONTENT MANAGEMENT</p><h1>網站內容</h1></div>
+          <button id="new-record" class="primary-button" type="button">新增消息</button>
+        </div>
+        <nav id="content-tabs" class="content-tabs" aria-label="內容類型">
+          <button type="button" data-type="news" class="active">最新消息</button>
+          <button type="button" data-type="products">產品</button>
+          <button type="button" data-type="categories">產品分類</button>
+          <button type="button" data-type="locations">服務據點</button>
+          <button type="button" data-type="media">圖片庫</button>
+          <button type="button" data-type="inquiries">詢價紀錄</button>
+        </nav>
+        <section id="gpt-transfer" class="gpt-transfer" aria-labelledby="gpt-transfer-title">
+          <div class="gpt-transfer-copy">
+            <p class="admin-eyebrow">GPT CONTENT WORKFLOW</p>
+            <h2 id="gpt-transfer-title">用 GPT 批次整理內容</h2>
+            <p>下載目前類型的作業範本，交給 GPT 填寫後，把完整 JSON 檔拖回來，或直接貼上下方。</p>
+          </div>
+          <div class="gpt-transfer-actions">
+            <button id="export-template" class="secondary-button" type="button">下載新增範本</button>
+            <button id="export-current" class="secondary-button" type="button">匯出目前資料</button>
+            <label id="import-drop-zone" class="import-drop-zone" tabindex="0">
+              <input id="import-file" type="file" accept="application/json,.json" />
+              <strong>選擇或拖入 GPT JSON</strong><span>最大 2 MB、一次最多 100 筆</span>
+            </label>
+          </div>
+          <div class="paste-import">
+            <label>或直接貼上 GPT 回傳的 JSON<textarea id="import-json" placeholder="貼上包含 format、contentType 與 records 的完整 JSON…" maxlength="2000000"></textarea></label>
+            <button id="import-pasted" class="primary-button" type="button">檢查並匯入</button>
+          </div>
+        </section>
+        <div class="admin-columns">
+          <aside class="record-panel">
+            <div class="record-panel-heading"><strong id="record-count">0 筆</strong><span>選擇一筆進行編輯</span></div>
+            <div id="record-list" class="record-list"></div>
+          </aside>
+          <article id="editor" class="editor">
+            <div class="empty-editor"><strong>選擇內容開始編輯</strong><p>也可以使用右上方按鈕新增內容。</p></div>
+          </article>
+        </div>
+      </section>
+    </main>
+    <input id="media-upload-input" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,image/avif" multiple hidden />
+    <div id="admin-status" class="admin-status" role="status" aria-live="polite"></div>
+  </body>
+</html>

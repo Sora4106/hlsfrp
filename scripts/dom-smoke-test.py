@@ -11,14 +11,20 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CHROME = Path(r"C:\Program Files\Google\Chrome\Application\chrome.exe")
+BROWSER_CANDIDATES = (
+    Path(r"C:\Program Files\Google\Chrome\Application\chrome.exe"),
+    Path(r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"),
+    Path(r"C:\Program Files\Microsoft\Edge\Application\msedge.exe"),
+    Path(r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"),
+)
 PORT = 4175
 TEST_URL = f"http://127.0.0.1:{PORT}/scripts/dom-smoke-runner.html"
 
 
 def main() -> int:
-    if not CHROME.exists():
-        raise RuntimeError(f"Chrome not found at {CHROME}")
+    browser = next((candidate for candidate in BROWSER_CANDIDATES if candidate.exists()), None)
+    if browser is None:
+        raise RuntimeError("Chrome or Microsoft Edge was not found.")
 
     profile_root = ROOT / "research" / "verification"
     profile_root.mkdir(parents=True, exist_ok=True)
@@ -33,7 +39,7 @@ def main() -> int:
         time.sleep(1)
         result = subprocess.run(
             [
-                str(CHROME),
+                str(browser),
                 "--headless=new",
                 "--disable-gpu",
                 "--hide-scrollbars",

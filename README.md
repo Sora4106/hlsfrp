@@ -1,54 +1,58 @@
-# 好利生實業新版網站
+# 好利生實業官方網站
 
-好利生實業股份有限公司的企業網站，整合公司介紹、產品分類、產品說明、歷史消息、三地聯絡資料與圖片，支援桌機與手機瀏覽。
-
-## 網站內容
-
-- 繁中、簡中、英文與泰文介面
-- 首次依瀏覽器語言顯示對應語系，並可手動切換
-- 4 大產品分類、11 個產品詳情頁
-- 11 篇歷史消息
-- 台灣、泰國、廈門聯絡資訊
-- 64 個本地圖片資產
-- 可放大產品圖、手機選單、響應式排版
-- 詢價表單目前以 Email 寄送，資料層已預留 Supabase 接入點
+好利生實業股份有限公司的多語系靜態網站，內容涵蓋公司沿革、四大產品分類、11 項產品、歷史消息、台灣與泰國服務據點，以及專案詢價。
 
 ## 本機預覽
-
-網站沒有套件依賴。在專案目錄執行：
 
 ```powershell
 python -m http.server 4173 --bind 127.0.0.1
 ```
 
-開啟 `http://127.0.0.1:4173/#/home`。
+開啟 `http://127.0.0.1:4173/?skipWelcome=1#/home`。
 
-## 部署
+## 內容與程式結構
 
-`.github/workflows/deploy-pages.yml` 會在推送到 `main` 後部署 GitHub Pages。GitHub Repository Settings → Pages → Build and deployment 的 Source 請選擇 **GitHub Actions**。
+- `content.js`：未連線 Supabase 時使用的內建內容與多語資料
+- `content-service.js`：Supabase 讀寫、登入、圖片儲存及內建內容回退
+- `supabase-config.js`：Supabase Project URL 與公開金鑰
+- `admin.html`、`admin.js`、`admin.css`：內容管理頁面
+- `scripts/build-portable-admin.js`：產生可直接雙擊的單檔管理工具
+- `supabase/schema.sql`：全部以 `hls_` 開頭的資料表、RLS、圖片權限與公開內容函式
+- `supabase/seed.sql`：由目前網站內容產生的初始資料
+- `public/assets/legacy/`：舊站原始素材
+- `public/assets/optimized/`：網站使用的 WebP 圖片
 
-## 內容維護
+Supabase 的完整啟用步驟請見 [docs/supabase-setup.md](docs/supabase-setup.md)。未設定或暫時無法連線時，前台會自動使用 `content.js`，不會顯示空白網站。
 
-- 公司、產品、聯絡與消息資料：[content.js](content.js)
-- 頁面組版與互動：[app.js](app.js)
-- 視覺樣式：[styles.css](styles.css)
-- 原始圖片：`public/assets/legacy/`
-- 網站載入用 WebP 與縮圖：`public/assets/optimized/`
-- 語系偵測與翻譯工具：[localization.js](localization.js)
-- 資料來源抽象層：[content-service.js](content-service.js)
+## 圖片管理
 
-每次正式推送前須遞增根目錄的 `VERSION`，並建立相同版本的 Git 標籤；版本號不會顯示在網站畫面。
+管理頁的「圖片庫」可批次拖曳一般圖片，產品、分類與據點編輯表單也可直接選圖。瀏覽器會先將圖片最長邊縮至 2400px 並轉成 WebP，再把檔案存入公開的 Supabase Storage bucket `hls-site-assets`；`hls_media` 資料表保存圖片索引與公開網址。仍被內容引用的圖片不允許刪除。
 
-日後接 Supabase 時，保留 `HLSContentService.getSiteData()` 的回傳格式即可，不需要改寫畫面。建議資料表與安全設定請見 [docs/supabase-roadmap.md](docs/supabase-roadmap.md)。
+## 發布
 
-## 維護與驗證工具
+推送到 `main` 後，`.github/workflows/deploy-pages.yml` 會自動發布至 GitHub Pages。請先在 GitHub Repository Settings 的 Pages 將 Source 設為 **GitHub Actions**。
 
-Windows PowerShell 可使用：
+## 驗證
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-site.ps1
-python scripts/optimize-images.py
 python scripts/dom-smoke-test.py
+node --check app.js
+node --check admin.js
+node --check content-service.js
+node scripts/media-smoke-test.js
+node scripts/portable-admin-smoke-test.js
 ```
 
-盤點與瀏覽器驗證輸出位於 `research/`，不會提交到 Git。
+若更新 `content.js` 的預設內容，請重新產生種子資料：
+
+```powershell
+node scripts/generate-supabase-seed.js
+```
+
+若要把不公開的管理工具交給同事，請產生單檔版本：
+
+```powershell
+node scripts/build-portable-admin.js
+```
+
+將 `portable-admin` 資料夾私下傳給同事即可。此資料夾已排除於 Git，GitHub Pages 也不會發布管理頁。

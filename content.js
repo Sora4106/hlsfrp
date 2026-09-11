@@ -510,15 +510,6 @@
         website: "http://www.hls.co.th",
         line: "7871991",
       },
-      {
-        id: "xiamen",
-        region: l("中國・廈門", "Xiamen, China"),
-        company: l("廈門好利興機械設備有限公司", "Xiamen HaoLiXing Livestock Machinery Co., Ltd."),
-        image: asset("51_2s6h.jpg"),
-        address: l("廈門市思明區禾祥西路", "Hexiang West Road, Siming District, Xiamen"),
-        phone: "15001388846",
-        email: "3232588119@qq.com",
-      },
     ],
     news: [
       {

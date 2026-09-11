@@ -204,7 +204,7 @@
     const company = state.data.company;
     const about = state.data.about;
     const featuredIds = ["feed-system", "domestic-treatment", "chemical-tank", "integrated-bathroom"];
-    const featured = featuredIds.map(productById);
+    const featured = featuredIds.map(productById).filter(Boolean);
     setMeta(t(company.name), t(company.tagline));
     return `
       <section class="hero home-hero">
@@ -227,7 +227,7 @@
       <section class="capability-strip">
         <div class="container capability-grid">
           <div><strong>50<sup>+</sup></strong><span>${copy("年製造經驗", "Years of experience", "ปีแห่งประสบการณ์")}</span></div>
-          <div><strong>03</strong><span>${copy("亞洲服務據點", "Asian locations", "จุดบริการในเอเชีย")}</span></div>
+          <div><strong>${String(state.data.contacts.length).padStart(2, "0")}</strong><span>${copy("亞洲服務據點", "Asian locations", "จุดบริการในเอเชีย")}</span></div>
           <div><strong>FRP</strong><span>${copy("設計・研發・製造", "Design · R&D · Manufacturing", "ออกแบบ・วิจัย・ผลิต")}</span></div>
         </div>
       </section>
@@ -504,13 +504,15 @@
             <label>${esc(ui("message"))}<textarea name="message" rows="6" maxlength="2000" required></textarea></label>
             <label class="form-trap" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off" /></label>
             <button class="button button-primary" type="submit"><span>${esc(ui("submit"))}</span>${icons.arrow}</button>
-            <p class="form-hint">${copy("送出後會開啟電子郵件程式，請確認內容再寄出。", "Your email app will open so you can review the message before sending.", "ระบบจะเปิดโปรแกรมอีเมลเพื่อให้คุณตรวจสอบข้อความก่อนส่ง")}</p>
+            <p class="form-hint">${HLSContentService.isConfigured()
+              ? copy("送出後會安全儲存需求，我們將儘快與你聯絡。", "Your inquiry will be stored securely and we will respond as soon as possible.", "ระบบจะบันทึกคำถามของคุณอย่างปลอดภัย และเราจะติดต่อกลับโดยเร็ว")
+              : copy("送出後會開啟電子郵件程式，請確認內容再寄出。", "Your email app will open so you can review the message before sending.", "ระบบจะเปิดโปรแกรมอีเมลเพื่อให้คุณตรวจสอบข้อความก่อนส่ง")}</p>
           </form>
         </div>
       </section>
       <section class="section locations-section">
         <div class="container">
-          ${sectionHeading(copy("區域服務據點", "REGIONAL LOCATIONS", "จุดบริการในภูมิภาค"), copy("台灣、泰國與廈門聯絡資訊", "Contact details for Taiwan, Thailand and Xiamen", "ข้อมูลติดต่อในไต้หวัน ไทย และเซี่ยเหมิน"), "", "center")}
+          ${sectionHeading(copy("區域服務據點", "REGIONAL LOCATIONS", "จุดบริการในภูมิภาค"), copy("台灣與泰國聯絡資訊", "Contact details for Taiwan and Thailand", "ข้อมูลติดต่อในไต้หวันและไทย"), "", "center")}
           <div class="location-grid">
             ${state.data.contacts.map((contact, index) => `
               <article class="location-card reveal" style="--delay:${index * 70}ms">
@@ -709,7 +711,7 @@
     if (event.target.closest(".lightbox-close")) $("#lightbox").close();
   });
 
-  document.addEventListener("submit", (event) => {
+  document.addEventListener("submit", async (event) => {
     if (event.target.id !== "inquiry-form") return;
     event.preventDefault();
     const form = new FormData(event.target);
@@ -734,6 +736,27 @@
       showToast(ui("tooFast"));
       return;
     }
+    const submitButton = $("button[type=submit]", event.target);
+    submitButton.disabled = true;
+    if (HLSContentService.isConfigured()) {
+      try {
+        await HLSContentService.recordInquiry({
+          name,
+          email,
+          phone: phone || null,
+          message,
+          language: state.lang,
+          source_page: location.href.slice(0, 1000),
+        });
+        event.target.reset();
+        showToast(copy("需求已送出，謝謝你的來信。", "Your inquiry has been sent. Thank you.", "ส่งคำถามเรียบร้อยแล้ว ขอบคุณค่ะ/ครับ"));
+        submitButton.disabled = false;
+        return;
+      } catch (error) {
+        console.warn("Inquiry storage unavailable; opening an email draft instead.", error);
+        showToast(copy("線上送出暫時無法使用，已改為開啟電子郵件。", "Online submission is temporarily unavailable; opening an email draft instead.", "การส่งออนไลน์ไม่พร้อมใช้งานชั่วคราว ระบบจะเปิดอีเมลแทน"));
+      }
+    }
     const subject = `${copy("網站詢價", "Website inquiry", "สอบถามผ่านเว็บไซต์")}｜${name}`;
     const body = [
       `${ui("name")}: ${name}`,
@@ -745,6 +768,7 @@
     ].join("\n");
     window.location.href = `mailto:${state.data.company.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     showToast(ui("mailReady"));
+    submitButton.disabled = false;
   });
 
   window.addEventListener("hashchange", render);
