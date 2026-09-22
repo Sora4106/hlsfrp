@@ -229,15 +229,9 @@ drop policy if exists "hls_media_admin_all" on public.hls_media;
 create policy "hls_media_admin_all" on public.hls_media
 for all to authenticated using (public.hls_is_admin()) with check (public.hls_is_admin());
 
+-- The public website has no enquiry form. Keep historical enquiries accessible
+-- only to authenticated hls_admins, and reject anonymous REST inserts.
 drop policy if exists "hls_inquiries_public_insert" on public.hls_inquiries;
-create policy "hls_inquiries_public_insert" on public.hls_inquiries
-for insert to anon, authenticated
-with check (
-  char_length(name) between 1 and 100
-  and char_length(email) between 3 and 254
-  and char_length(message) between 1 and 2000
-  and status = 'new'
-);
 
 -- Create a PUBLIC Storage bucket named hls-site-assets in the Supabase dashboard.
 -- Storage file operations must use the Storage API; these policies restrict
@@ -263,7 +257,7 @@ grant select, insert, update, delete on public.hls_product_categories, public.hl
   public.hls_news, public.hls_locations to authenticated;
 grant select, insert, update, delete on public.hls_inquiries to authenticated;
 grant select, insert, update, delete on public.hls_media to authenticated;
-grant insert on public.hls_inquiries to anon;
+revoke insert on public.hls_inquiries from anon;
 grant usage, select on sequence public.hls_news_id_seq to authenticated;
 
 revoke all on function public.hls_is_admin() from public;

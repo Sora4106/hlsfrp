@@ -21,7 +21,7 @@
     categories: "產品分類",
     locations: "服務據點",
     media: "圖片",
-    inquiries: "詢價紀錄",
+    inquiries: "歷史詢問",
   };
   const state = {
     type: "news",
@@ -168,7 +168,7 @@
     if (state.type === "products" || state.type === "categories") return row.name?.zh || row.name?.en || row.id || "未命名";
     if (state.type === "locations") return row.region?.zh || row.company?.zh || row.id || "未命名";
     if (state.type === "media") return row.original_name || row.storage_path || "圖片";
-    return row.name || row.email || "詢價紀錄";
+    return row.name || row.email || "歷史詢問";
   }
 
   function subtitleFor(row) {
@@ -357,7 +357,7 @@
 
   function inquiryEditor(row) {
     const statuses = { new: "新詢價", contacted: "已聯絡", closed: "已結案", spam: "垃圾訊息" };
-    return editorShell("詢價紀錄", `${row.created_at ? new Date(row.created_at).toLocaleString("zh-TW") : ""} · ${row.language || ""}`, `
+    return editorShell("歷史詢問（官網已停止新增）", `${row.created_at ? new Date(row.created_at).toLocaleString("zh-TW") : ""} · ${row.language || ""}`, `
       <label>姓名<input value="${esc(row.name || "")}" readonly /></label>
       <label>電子郵件<input value="${esc(row.email || "")}" readonly /></label>
       <label>電話<input value="${esc(row.phone || "")}" readonly /></label>
@@ -736,7 +736,7 @@
         published,
       };
     }
-    throw new Error("詢價紀錄不接受 GPT 匯入。");
+    throw new Error("歷史詢問紀錄不接受 GPT 匯入。");
   }
 
   function parseTransfer(text) {

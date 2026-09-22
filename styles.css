@@ -1875,100 +1875,112 @@ svg {
   font-size: 1rem;
 }
 
-.inquiry-form {
+.email-contact-card {
   padding: 42px;
   border-radius: var(--radius-md);
   background: var(--mist);
   box-shadow: var(--shadow-sm);
 }
 
-.form-heading {
+.email-contact-card .eyebrow {
   margin-bottom: 30px;
-  padding-bottom: 25px;
-  border-bottom: 1px solid var(--line);
 }
 
-.form-heading .eyebrow {
-  margin-bottom: 8px;
-}
-
-.form-heading h2 {
+.email-contact-card h2 {
   margin: 0;
   color: var(--navy-900);
   font-size: 1.7rem;
 }
 
-.form-heading > p:last-child {
+.email-contact-card > p:not(.eyebrow) {
   margin: 10px 0 0;
   color: var(--muted);
-  font-size: 0.94rem;
+  font-size: 0.98rem;
+  line-height: 1.8;
 }
 
-.inquiry-form label {
-  display: grid;
-  gap: 7px;
-  margin-bottom: 19px;
-  color: var(--navy-800);
-  font-size: 0.74rem;
-  font-weight: 750;
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 17px;
-}
-
-.inquiry-form input,
-.inquiry-form textarea {
+.email-contact-card .button {
   width: 100%;
-  border: 1px solid #cfd9df;
-  border-radius: 9px;
-  outline: 0;
+  margin-top: 28px;
+  justify-content: center;
+}
+
+.email-contact-notes {
+  display: grid;
+  gap: 11px;
+  margin: 25px 0 20px;
+  padding: 20px 0 0;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.83rem;
+  line-height: 1.7;
+}
+
+.email-contact-notes li::marker {
+  color: var(--blue-600);
+}
+
+.privacy-inline-link {
+  color: var(--blue-700);
+}
+
+/* Privacy */
+.privacy-section {
+  background: var(--mist);
+}
+
+.privacy-layout {
+  max-width: 980px;
+}
+
+.privacy-card {
+  padding: clamp(28px, 5vw, 66px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
   background: var(--white);
-  color: var(--ink);
-  transition: border-color 180ms ease, box-shadow 180ms ease;
+  box-shadow: var(--shadow-sm);
 }
 
-.inquiry-form input {
-  height: 50px;
-  padding: 0 14px;
+.privacy-intro {
+  margin-bottom: 44px;
+  padding-bottom: 34px;
+  border-bottom: 1px solid var(--line);
 }
 
-.inquiry-form textarea {
-  resize: vertical;
-  padding: 12px 14px;
+.privacy-intro .eyebrow {
+  margin-bottom: 12px;
 }
 
-.inquiry-form input:focus,
-.inquiry-form textarea:focus {
-  border-color: var(--blue-600);
-  box-shadow: 0 0 0 3px rgba(8, 124, 190, 0.11);
+.privacy-intro h1 {
+  margin: 0;
+  color: var(--navy-900);
+  font-size: clamp(2rem, 4vw, 3.15rem);
+  line-height: 1.15;
 }
 
-.inquiry-form .button {
-  width: 100%;
-  border: 0;
-  cursor: pointer;
+.privacy-intro > p:last-child,
+.privacy-item p {
+  margin: 15px 0 0;
+  color: var(--muted);
+  line-height: 1.9;
 }
 
-.inquiry-form .button:disabled {
-  cursor: wait;
-  opacity: 0.6;
+.privacy-item + .privacy-item {
+  margin-top: 33px;
+  padding-top: 33px;
+  border-top: 1px solid var(--line);
 }
 
-.form-trap {
-  position: absolute !important;
-  width: 1px !important;
-  height: 1px !important;
-  overflow: hidden !important;
-  clip-path: inset(50%) !important;
+.privacy-item h2 {
+  margin: 0;
+  color: var(--navy-900);
+  font-size: 1.16rem;
 }
 
-.form-hint {
-  margin: 14px 0 0;
-  color: #7b8992;
-  font-size: 0.67rem;
+.privacy-item a {
+  color: var(--blue-700);
+  font-weight: 750;
+  overflow-wrap: anywhere;
 }
 
 .locations-section {
@@ -2206,24 +2218,14 @@ svg {
   gap: 30px;
 }
 
-.visitor-counter {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: #e2f6fd;
+.footer-privacy {
+  color: #d2effa;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
-.visitor-counter strong {
-  min-width: 72px;
-  padding: 4px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
+.footer-privacy:hover {
   color: var(--white);
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-  font-size: 0.88rem;
-  letter-spacing: 0.1em;
-  text-align: center;
 }
 
 /* First-visit brand welcome */
@@ -2857,13 +2859,8 @@ svg {
     margin-top: 45px;
   }
 
-  .inquiry-form {
+  .email-contact-card {
     padding: 28px 20px;
-  }
-
-  .form-row {
-    grid-template-columns: 1fr;
-    gap: 0;
   }
 
   .map-card {
@@ -2881,11 +2878,6 @@ svg {
 
   .footer-brand {
     grid-column: auto;
-  }
-
-  .visitor-counter {
-    width: 100%;
-    justify-content: space-between;
   }
 
   .welcome-overlay {
@@ -2943,7 +2935,6 @@ svg {
 .archive-aside > span,
 .article-meta,
 .article-side time,
-.form-hint,
 .footer-bottom,
 .toast {
   font-size: 0.8rem;
@@ -2960,7 +2951,7 @@ svg {
 .archive-note,
 .article-side strong,
 .quick-contact small,
-.inquiry-form label,
+.email-contact-notes,
 .location-image span,
 .contact-details dt,
 .map-card small,

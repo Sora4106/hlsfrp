@@ -4,7 +4,6 @@
   const state = {
     lang: window.HLSLocale.detectLanguage(),
     data: null,
-    visitorCount: null,
   };
   const now = Date.now();
   let rapidReloadDelay = 0;
@@ -160,7 +159,7 @@
       <div class="footer-bottom">
         <div class="container">
           <span>© ${new Date().getFullYear()} ${esc(t(company.name))}</span>
-          <div class="visitor-counter" aria-live="polite"><span>${esc(ui("visitorCount"))}</span><strong data-visitor-count>${state.visitorCount == null ? "—" : new Intl.NumberFormat(window.HLSLocale.languageTags[state.lang]).format(state.visitorCount)}</strong></div>
+          <a class="footer-privacy" href="${routeHref("privacy")}">${copy("隱私權政策", "Privacy notice", "นโยบายความเป็นส่วนตัว")}</a>
           <span>${copy("台灣設計與製造", "Designed and manufactured in Taiwan", "ออกแบบและผลิตในไต้หวัน")}</span>
         </div>
       </div>`;
@@ -491,23 +490,22 @@
       <section class="section contact-intro">
         <div class="container contact-intro-grid">
           <div class="contact-summary">
-            ${sectionHeading(copy("聯絡總公司", "CONTACT HEADQUARTERS", "ติดต่อสำนักงานใหญ่"), copy("告訴我們你的尺寸、容量與使用環境", "Tell us your dimensions, capacity and operating environment", "แจ้งขนาด ความจุ และสภาพแวดล้อมการใช้งาน"), copy("若尚未確定規格也沒關係，我們可以從現場條件開始討論。", "If specifications are not yet final, we can begin with your site conditions.", "หากยังไม่แน่ใจข้อมูลจำเพาะ เราสามารถเริ่มหารือจากสภาพพื้นที่ของคุณ"))}
+            ${sectionHeading(copy("聯絡總公司", "CONTACT HEADQUARTERS", "ติดต่อสำนักงานใหญ่"), copy("請以電子郵件直接與我們聯繫", "Please contact us directly by email", "โปรดติดต่อเราโดยตรงทางอีเมล"), copy("本站不設線上填寫表單；你可依需求自行撰寫郵件，寄給我們的官方信箱。", "This website has no online enquiry form. Write your message in your own email app and send it to our official mailbox.", "เว็บไซต์นี้ไม่มีแบบฟอร์มสอบถามออนไลน์ โปรดเขียนข้อความด้วยโปรแกรมอีเมลของคุณและส่งมายังอีเมลทางการของเรา"))}
             <div class="quick-contact reveal">
-              <a href="tel:${esc(company.phone)}">${icons.phone}<span><small>${esc(ui("callUs"))}</small><strong>${esc(company.phone)}</strong></span></a>
               <a href="mailto:${esc(company.email)}">${icons.mail}<span><small>${esc(ui("emailUs"))}</small><strong>${esc(company.email)}</strong></span></a>
             </div>
           </div>
-          <form id="inquiry-form" class="inquiry-form reveal" novalidate>
-            <div class="form-heading"><p class="eyebrow">${copy("需求諮詢", "PROJECT INQUIRY", "สอบถามโครงการ")}</p><h2>${esc(ui("formTitle"))}</h2><p>${esc(ui("formIntro"))}</p></div>
-            <div class="form-row"><label>${esc(ui("name"))}<input name="name" autocomplete="name" maxlength="100" required /></label><label>${esc(ui("email"))}<input type="email" name="email" autocomplete="email" maxlength="254" required /></label></div>
-            <label>${esc(ui("phone"))}<input name="phone" autocomplete="tel" inputmode="tel" maxlength="40" /></label>
-            <label>${esc(ui("message"))}<textarea name="message" rows="6" maxlength="2000" required></textarea></label>
-            <label class="form-trap" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off" /></label>
-            <button class="button button-primary" type="submit"><span>${esc(ui("submit"))}</span>${icons.arrow}</button>
-            <p class="form-hint">${HLSContentService.isConfigured()
-              ? copy("送出後會安全儲存需求，我們將儘快與你聯絡。", "Your inquiry will be stored securely and we will respond as soon as possible.", "ระบบจะบันทึกคำถามของคุณอย่างปลอดภัย และเราจะติดต่อกลับโดยเร็ว")
-              : copy("送出後會開啟電子郵件程式，請確認內容再寄出。", "Your email app will open so you can review the message before sending.", "ระบบจะเปิดโปรแกรมอีเมลเพื่อให้คุณตรวจสอบข้อความก่อนส่ง")}</p>
-          </form>
+          <aside class="email-contact-card reveal" aria-label="${copy("電子郵件聯絡方式", "Email contact method", "วิธีติดต่อทางอีเมล")}">
+            <p class="eyebrow">${copy("資料最小化", "DATA MINIMISATION", "เก็บข้อมูลเท่าที่จำเป็น")}</p>
+            <h2>${copy("由你決定要提供的內容", "You decide what to share", "คุณเป็นผู้ตัดสินใจว่าจะแชร์ข้อมูลใด")}</h2>
+            <p>${copy("點選下方按鈕會開啟你的電子郵件程式。只有在你自行按下寄送後，郵件內容才會送達本公司；網站不會預先蒐集、暫存或寫入你的姓名、信箱、電話與需求資料。", "The button below opens your own email app. Only after you choose to send will your message reach us; this website does not pre-collect, temporarily store or write your name, email, phone number or enquiry details.", "ปุ่มด้านล่างจะเปิดโปรแกรมอีเมลของคุณ ข้อความจะส่งถึงเราเมื่อคุณเลือกส่งเองเท่านั้น เว็บไซต์นี้จะไม่เก็บ รอจัดเก็บ หรือบันทึกชื่อ อีเมล โทรศัพท์ หรือรายละเอียดคำถามของคุณล่วงหน้า")}</p>
+            <a class="button button-primary" href="mailto:${esc(company.email)}"><span>${copy("開啟電子郵件", "Open your email app", "เปิดโปรแกรมอีเมล")}</span>${icons.mail}</a>
+            <ul class="email-contact-notes">
+              <li>${copy("請勿在信中提供身分證字號、金融帳號、密碼或其他敏感資訊。", "Do not include ID numbers, bank details, passwords or other sensitive information in your email.", "โปรดอย่าส่งเลขบัตรประจำตัว ข้อมูลธนาคาร รหัสผ่าน หรือข้อมูลอ่อนไหวอื่น ๆ ทางอีเมล")}</li>
+              <li>${copy("若你選擇寄信，請先閱讀下方的隱私權政策。", "If you choose to email us, please read the privacy notice below first.", "หากคุณเลือกส่งอีเมล โปรดอ่านนโยบายความเป็นส่วนตัวด้านล่างก่อน")}</li>
+            </ul>
+            <a class="text-link privacy-inline-link" href="${routeHref("privacy")}">${copy("閱讀隱私權政策", "Read the privacy notice", "อ่านนโยบายความเป็นส่วนตัว")}${icons.arrow}</a>
+          </aside>
         </div>
       </section>
       <section class="section locations-section">
@@ -535,6 +533,60 @@
       <section class="map-section">
         <iframe title="${copy("好利生高雄總公司地圖", "Map to Hou Li Sheng headquarters", "แผนที่สำนักงานใหญ่โฮ่ว ลี่ เซิง ที่เกาสง")}" src="https://www.openstreetmap.org/export/embed.html?bbox=120.4103342%2C22.582475%2C120.4403342%2C22.594475&amp;layer=mapnik&amp;marker=22.588475%2C120.4253342" loading="lazy" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
         <a class="map-card" href="https://maps.google.com/?q=%E9%AB%98%E9%9B%84%E5%B8%82%E5%A4%A7%E5%AF%AE%E5%8D%80%E5%A4%A7%E6%9C%89%E4%B8%80%E8%A1%9733%E8%99%9F" target="_blank" rel="noopener noreferrer">${icons.pin}<span><small>${copy("台灣總公司", "TAIWAN HEADQUARTERS", "สำนักงานใหญ่ไต้หวัน")}</small><strong>${esc(t(company.address))}</strong></span></a>
+      </section>`;
+  }
+
+  function renderPrivacy() {
+    const company = state.data.company;
+    const email = `<a href="mailto:${esc(company.email)}">${esc(company.email)}</a>`;
+    setMeta(copy("隱私權政策", "Privacy notice", "นโยบายความเป็นส่วนตัว"), copy("好利生實業網站的個人資料與電子郵件處理說明。", "How Hou Li Sheng handles personal data and email enquiries.", "คำอธิบายการจัดการข้อมูลส่วนบุคคลและอีเมลของเว็บไซต์โฮ่ว ลี่ เซิง"));
+    return `
+      ${renderPageHero(copy("隱私權政策", "PRIVACY NOTICE", "นโยบายความเป็นส่วนตัว"), copy("隱私權政策", "Privacy notice", "นโยบายความเป็นส่วนตัว"), "public/assets/optimized/17_u2wr.webp")}
+      <section class="section privacy-section">
+        <div class="container privacy-layout">
+          <article class="privacy-card">
+            <div class="privacy-intro">
+              <p class="eyebrow">${copy("生效日期：2026 年 9 月 22 日", "EFFECTIVE: 22 SEPTEMBER 2026", "มีผลบังคับใช้: 22 กันยายน 2026")}</p>
+              <h1>${copy("我們只在必要範圍內處理資訊", "We process information only when needed", "เราใช้ข้อมูลเท่าที่จำเป็น")}</h1>
+              <p>${copy("本政策適用於好利生實業股份有限公司網站與官方電子郵件聯絡方式。網站不提供會員、電子報訂閱或線上詢問表單。", "This notice applies to the website and official email contact methods of Hou Li Sheng Enterprise Co., Ltd. The website does not offer accounts, newsletter subscriptions or an online enquiry form.", "นโยบายนี้ใช้กับเว็บไซต์และช่องทางอีเมลทางการของบริษัท โฮ่ว ลี่ เซิง เอ็นเตอร์ไพรส์ จำกัด เว็บไซต์ไม่มีบัญชีผู้ใช้ การสมัครรับข่าวสาร หรือแบบฟอร์มสอบถามออนไลน์")}</p>
+            </div>
+
+            <section class="privacy-item">
+              <h2>${copy("1. 資料控制者與聯絡方式", "1. Who is responsible", "1. ผู้รับผิดชอบข้อมูล")}</h2>
+              <p>${esc(t(company.name))}；${esc(t(company.address))}。${copy("如有隱私權、查詢、更正或刪除資料的需求，請來信", "For privacy questions or requests to access, correct or delete your data, email", "หากมีคำถามด้านความเป็นส่วนตัว หรือต้องการขอเข้าถึง แก้ไข หรือลบข้อมูล โปรดส่งอีเมลถึง")} ${email}。</p>
+            </section>
+
+            <section class="privacy-item">
+              <h2>${copy("2. 網站不蒐集線上詢問資料", "2. No online enquiry collection", "2. ไม่มีการเก็บข้อมูลผ่านแบบสอบถามออนไลน์")}</h2>
+              <p>${copy("本站已移除姓名、電子信箱、電話與需求說明的填寫欄位，也不會將這類資料寫入網站資料庫。請使用你自己的電子郵件程式，自行決定是否及提供哪些內容給我們。", "We have removed fields for name, email, phone and enquiry details, and this website does not write those details to a website database. Use your own email app and decide whether, and what, to share with us.", "เราได้ลบช่องกรอกชื่อ อีเมล โทรศัพท์ และรายละเอียดคำถามแล้ว และเว็บไซต์นี้จะไม่บันทึกข้อมูลดังกล่าวลงฐานข้อมูล โปรดใช้โปรแกรมอีเมลของคุณเองและตัดสินใจว่าจะแชร์ข้อมูลใดกับเรา")}</p>
+            </section>
+
+            <section class="privacy-item">
+              <h2>${copy("3. 當你自行寄送電子郵件時", "3. If you choose to email us", "3. เมื่อคุณเลือกส่งอีเมลถึงเรา")}</h2>
+              <p>${copy("我們會處理你主動提供的姓名、公司、電子信箱、電話、郵件內容與附件，僅用於回覆、評估合作或報價需求、後續聯繫及必要的客戶服務。除非另行取得同意，我們不會將詢問內容用於電子報或其他行銷。", "We process the name, company, email address, phone number, message and attachments you voluntarily provide only to reply, assess a potential project or quotation, follow up, and provide necessary customer service. We will not use enquiry content for newsletters or other marketing unless we obtain separate consent.", "เราจะใช้ชื่อ บริษัท อีเมล โทรศัพท์ ข้อความ และไฟล์แนบที่คุณให้โดยสมัครใจเท่านั้น เพื่อการตอบกลับ ประเมินโครงการหรือใบเสนอราคา ติดตามงาน และให้บริการลูกค้าที่จำเป็น เราจะไม่นำข้อมูลคำถามไปใช้ส่งข่าวสารหรือการตลาดอื่น เว้นแต่ได้รับความยินยอมแยกต่างหาก")}</p>
+            </section>
+
+            <section class="privacy-item">
+              <h2>${copy("4. 使用期間、對象與跨境傳輸", "4. Retention, recipients and cross-border handling", "4. ระยะเวลา ผู้รับข้อมูล และการส่งข้อมูลข้ามประเทศ")}</h2>
+              <p>${copy("電子郵件往來原則上於詢問或專案結束後最長保留兩年；如有進行中的交易、爭議或法令保存義務，則保留至該事項結束或法定期限屆滿。資料僅會由需要處理該詢問的公司人員，以及你指定或適當的台灣／泰國服務據點處理。若你寄信至泰國據點，資料可能在台灣與泰國之間傳遞，以便回覆你的需求。", "Email correspondence is normally retained for no more than two years after an enquiry or project closes. It may be retained longer for an active transaction, dispute, or legal retention obligation. Information is handled only by staff who need it and by the appropriate Taiwan or Thailand service location you choose or that is needed to respond. If you email the Thailand office, information may be shared between Taiwan and Thailand to answer your enquiry.", "โดยปกติจะเก็บอีเมลไว้ไม่เกินสองปีหลังปิดคำถามหรือโครงการ แต่อาจเก็บนานขึ้นหากมีธุรกรรม ข้อพิพาท หรือหน้าที่ตามกฎหมาย ข้อมูลจะเข้าถึงได้เฉพาะพนักงานที่จำเป็นและสำนักงานบริการในไต้หวันหรือไทยที่คุณเลือกหรือจำเป็นต่อการตอบกลับ หากคุณส่งอีเมลถึงสำนักงานไทย ข้อมูลอาจส่งต่อระหว่างไต้หวันและไทยเพื่อให้ตอบคำถามได้")}</p>
+            </section>
+
+            <section class="privacy-item">
+              <h2>${copy("5. 網站技術資訊與第三方服務", "5. Website technology and third parties", "5. เทคโนโลยีเว็บไซต์และบุคคลที่สาม")}</h2>
+              <p>${copy("網站不使用廣告 Cookie、第三方廣告追蹤或訪客人次追蹤。瀏覽器僅會在你的裝置儲存語言選擇與歡迎畫面狀態，這些偏好不會傳送給我們。網站由 GitHub Pages 提供靜態託管，公開內容與圖片使用 Supabase 傳遞；這些服務可能依其自身政策處理必要的連線技術資料。聯絡頁的 OpenStreetMap 地圖嵌入，會使瀏覽器連線至該地圖服務。", "The website does not use advertising cookies, third-party advertising trackers, or visitor-count tracking. Your browser stores only your language choice and welcome-screen state on your device; these preferences are not sent to us. GitHub Pages hosts the static site and Supabase delivers published content and images; those services may process necessary connection data under their own policies. The embedded OpenStreetMap map on the contact page connects your browser to that map service.", "เว็บไซต์ไม่ใช้คุกกี้โฆษณา เครื่องมือติดตามโฆษณาจากบุคคลที่สาม หรือการนับผู้เข้าชม เบราว์เซอร์จะเก็บเฉพาะภาษาและสถานะหน้าต้อนรับไว้ในอุปกรณ์ของคุณ และจะไม่ส่งการตั้งค่าเหล่านี้ให้เรา GitHub Pages ใช้โฮสต์เว็บไซต์แบบสถิต และ Supabase ใช้ส่งเนื้อหาและรูปภาพที่เผยแพร่ ซึ่งอาจประมวลผลข้อมูลการเชื่อมต่อที่จำเป็นตามนโยบายของตนเอง แผนที่ OpenStreetMap ที่ฝังในหน้าติดต่อจะเชื่อมต่อเบราว์เซอร์ของคุณกับบริการแผนที่นั้น")}</p>
+            </section>
+
+            <section class="privacy-item">
+              <h2>${copy("6. 你的權利與安全措施", "6. Your rights and security", "6. สิทธิและความปลอดภัยของคุณ")}</h2>
+              <p>${copy("你可透過上述官方信箱申請查詢、閱覽、取得副本、補充或更正、停止蒐集／處理／利用，以及刪除個人資料。我們會在合理期間內依適用法令處理。公司會以權限控管與必要的管理措施，限制電子郵件詢問資料僅由授權人員存取。", "You may use the official email above to request access, review, a copy, correction, cessation of collection, processing or use, or deletion of personal data. We will handle requests within a reasonable period in accordance with applicable law. Access to email enquiry information is limited to authorized personnel through access controls and necessary administrative measures.", "คุณสามารถใช้อีเมลทางการข้างต้นเพื่อขอเข้าถึง ตรวจสอบ ขอสำเนา แก้ไข ระงับการเก็บ ใช้ หรือประมวลผล และลบข้อมูลส่วนบุคคล เราจะดำเนินการภายในระยะเวลาที่เหมาะสมตามกฎหมายที่ใช้บังคับ การเข้าถึงข้อมูลคำถามทางอีเมลจำกัดเฉพาะบุคลากรที่ได้รับอนุญาตด้วยการควบคุมสิทธิ์และมาตรการจัดการที่จำเป็น")}</p>
+            </section>
+
+            <section class="privacy-item">
+              <h2>${copy("7. 政策更新", "7. Updates to this notice", "7. การปรับปรุงนโยบาย")}</h2>
+              <p>${copy("若服務方式、資料處理或法令有重大變動，我們會在本頁更新內容與生效日期。", "If our services, data handling or applicable law changes materially, we will update this page and its effective date.", "หากบริการ วิธีใช้ข้อมูล หรือกฎหมายที่ใช้บังคับเปลี่ยนแปลงอย่างมีนัยสำคัญ เราจะปรับปรุงหน้านี้และวันที่มีผลบังคับใช้")}</p>
+            </section>
+          </article>
+        </div>
       </section>`;
   }
 
@@ -566,6 +618,7 @@
       html = article ? renderArticle(article) : renderNotFound();
     } else if (parts[0] === "news") html = renderNews();
     else if (parts[0] === "contact") html = renderContact();
+    else if (parts[0] === "privacy") html = renderPrivacy();
     else html = renderNotFound();
 
     renderHeader();
@@ -601,14 +654,6 @@
     elements.forEach((element) => observer.observe(element));
   }
 
-  function showToast(message) {
-    const toast = $("#toast");
-    toast.textContent = message;
-    toast.classList.add("show");
-    clearTimeout(showToast.timer);
-    showToast.timer = setTimeout(() => toast.classList.remove("show"), 3600);
-  }
-
   function initWelcomeOverlay() {
     const overlay = $("#welcome-overlay");
     if (new URLSearchParams(location.search).has("skipWelcome")) return;
@@ -634,30 +679,6 @@
       // Closing the overlay must work even when storage is unavailable.
     }
     setTimeout(() => { overlay.hidden = true; }, 180);
-  }
-
-  function normalizeInput(value, maxLength, multiline = false) {
-    const text = String(value || "").normalize("NFKC");
-    const cleaned = multiline
-      ? text.replace(/\r/g, "").replace(/[\u0000-\u0009\u000B-\u001F\u007F]/g, "")
-      : text.replace(/[\u0000-\u001F\u007F]/g, " ");
-    return cleaned.trim().slice(0, maxLength);
-  }
-
-  function allowFormSubmission() {
-    const rateKey = "hls-inquiry-attempts";
-    const currentTime = Date.now();
-    try {
-      const attempts = JSON.parse(localStorage.getItem(rateKey) || "[]")
-        .map(Number)
-        .filter((timestamp) => Number.isFinite(timestamp) && currentTime - timestamp < 300000);
-      if ((attempts.length && currentTime - attempts.at(-1) < 10000) || attempts.length >= 3) return false;
-      attempts.push(currentTime);
-      localStorage.setItem(rateKey, JSON.stringify(attempts));
-    } catch {
-      // Browser storage is an additional client-side guard, not a requirement.
-    }
-    return true;
   }
 
   document.addEventListener("click", (event) => {
@@ -711,66 +732,6 @@
     if (event.target.closest(".lightbox-close")) $("#lightbox").close();
   });
 
-  document.addEventListener("submit", async (event) => {
-    if (event.target.id !== "inquiry-form") return;
-    event.preventDefault();
-    const form = new FormData(event.target);
-    if (form.get("website")) {
-      showToast(ui("tooFast"));
-      return;
-    }
-    if (!event.target.checkValidity()) {
-      event.target.reportValidity();
-      showToast(ui("required"));
-      return;
-    }
-    const name = normalizeInput(form.get("name"), 100);
-    const email = normalizeInput(form.get("email"), 254);
-    const phone = normalizeInput(form.get("phone"), 40);
-    const message = normalizeInput(form.get("message"), 2000, true);
-    if (!name || !email || !message) {
-      showToast(ui("required"));
-      return;
-    }
-    if (!allowFormSubmission()) {
-      showToast(ui("tooFast"));
-      return;
-    }
-    const submitButton = $("button[type=submit]", event.target);
-    submitButton.disabled = true;
-    if (HLSContentService.isConfigured()) {
-      try {
-        await HLSContentService.recordInquiry({
-          name,
-          email,
-          phone: phone || null,
-          message,
-          language: state.lang,
-          source_page: location.href.slice(0, 1000),
-        });
-        event.target.reset();
-        showToast(copy("需求已送出，謝謝你的來信。", "Your inquiry has been sent. Thank you.", "ส่งคำถามเรียบร้อยแล้ว ขอบคุณค่ะ/ครับ"));
-        submitButton.disabled = false;
-        return;
-      } catch (error) {
-        console.warn("Inquiry storage unavailable; opening an email draft instead.", error);
-        showToast(copy("線上送出暫時無法使用，已改為開啟電子郵件。", "Online submission is temporarily unavailable; opening an email draft instead.", "การส่งออนไลน์ไม่พร้อมใช้งานชั่วคราว ระบบจะเปิดอีเมลแทน"));
-      }
-    }
-    const subject = `${copy("網站詢價", "Website inquiry", "สอบถามผ่านเว็บไซต์")}｜${name}`;
-    const body = [
-      `${ui("name")}: ${name}`,
-      `${ui("email")}: ${email}`,
-      `${ui("phone")}: ${phone || "-"}`,
-      "",
-      `${ui("message")}:`,
-      message,
-    ].join("\n");
-    window.location.href = `mailto:${state.data.company.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    showToast(ui("mailReady"));
-    submitButton.disabled = false;
-  });
-
   window.addEventListener("hashchange", render);
   window.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !$("#welcome-overlay").hidden) closeWelcomeOverlay();
@@ -797,14 +758,6 @@
       if (!location.hash) history.replaceState(null, "", routeHref("home"));
       render();
       initWelcomeOverlay();
-      HLSContentService.recordVisit()
-        .then((count) => {
-          if (!Number.isFinite(count)) return;
-          state.visitorCount = count;
-          const counter = $("[data-visitor-count]");
-          if (counter) counter.textContent = new Intl.NumberFormat(window.HLSLocale.languageTags[state.lang]).format(count);
-        })
-        .catch(() => {});
     })
     .catch(() => {
       $("#main-content").innerHTML = "<p class='load-error'>網站內容暫時無法載入，請稍後再試。</p>";

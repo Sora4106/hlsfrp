@@ -139,16 +139,6 @@
     }
   }
 
-  async function recordInquiry(inquiry) {
-    if (!isConfigured()) return false;
-    await apiRequest(`/rest/v1/${TABLES.inquiries}`, {
-      method: "POST",
-      headers: { Prefer: "return=minimal" },
-      body: inquiry,
-    });
-    return true;
-  }
-
   async function signIn(email, password) {
     return apiRequest("/auth/v1/token?grant_type=password", {
       method: "POST",
@@ -305,34 +295,11 @@
     return true;
   }
 
-  async function recordVisit() {
-    if (location.hostname !== "sora4106.github.io") return null;
-
-    const endpoint = "https://page-views-api.ratneshc.com/api/v1";
-    const query = new URLSearchParams({ site: "sora4106.github.io", path: "/hlsfrp/" });
-    const tracked = await fetch(`${endpoint}/track?${query}`, {
-      cache: "no-store",
-      credentials: "omit",
-      referrerPolicy: "no-referrer",
-    });
-    if (!tracked.ok) throw new Error(`Visit tracking failed: ${tracked.status}`);
-
-    const response = await fetch(`${endpoint}/views?${query}`, {
-      cache: "no-store",
-      credentials: "omit",
-      referrerPolicy: "no-referrer",
-    });
-    if (!response.ok) throw new Error(`Visit count failed: ${response.status}`);
-    const result = await response.json();
-    return Number.isFinite(Number(result.views)) ? Number(result.views) : null;
-  }
-
   window.HLSContentService = Object.freeze({
     TABLES,
     isConfigured,
     setConfig,
     getSiteData,
-    recordInquiry,
     signIn,
     refreshSession,
     signOut,
@@ -342,6 +309,5 @@
     findDuplicateMedia,
     getMediaUsage,
     deleteMedia,
-    recordVisit,
   });
 })();

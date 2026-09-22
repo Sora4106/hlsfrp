@@ -83,14 +83,19 @@
           assert(page().querySelectorAll(".contact-details").length === 2, "Contact cards are incomplete");
           assert(!page().body.textContent.includes("廈門") && !page().body.textContent.includes("Xiamen"), "Cancelled Xiamen location is still visible");
           assert(new URL(page().querySelector(".map-section iframe").src).hostname === "www.openstreetmap.org", "Map embed URL is not using the allowed host");
-          assert(page().querySelector('input[name="website"]'), "Form bot trap is missing");
-          assert([...page().querySelectorAll('.inquiry-form input:not([name="website"]), .inquiry-form textarea')].every((field) => field.maxLength > 0), "Contact field limits are missing");
+          assert(!page().querySelector(".inquiry-form"), "Contact form should not collect visitor data");
+          const emailContact = page().querySelector('.email-contact-card a[href^="mailto:"]');
+          assert(emailContact && emailContact.getAttribute("href") === "mailto:hlsfrp@gmail.com", "Official email contact link is missing");
+
+          await setRoute("#/privacy", ".privacy-card");
+          assert(page().querySelectorAll(".privacy-item").length === 7, "Privacy notice sections are incomplete");
+          assert(page().querySelector('.footer-privacy[href="#/privacy"]'), "Footer privacy link is missing");
+          assert(page().documentElement.outerHTML.includes("does not write those details to a website database"), "Privacy notice does not explain no website form storage");
 
           page().querySelector('[data-language="th"]').click();
           await setRoute("#/news/21", ".article-body");
           assert(/[\u0E00-\u0E7F]/.test(page().querySelector("h1").textContent), "Thai historical news title is missing");
           assert(page().documentElement.scrollWidth <= 390, "Article page has horizontal overflow");
-          assert(page().querySelector(".visitor-counter"), "Visitor counter is missing");
 
           view().sessionStorage.removeItem("hls-welcome-seen");
           frame.dataset.running = "welcome";
