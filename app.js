@@ -498,7 +498,6 @@
             </div>
           </div>
           <aside class="email-contact-card reveal" aria-label="${copy("電子郵件聯絡方式", "Email contact method", "วิธีติดต่อทางอีเมล")}">
-            <p class="eyebrow">${copy("資料最小化", "DATA MINIMISATION", "เก็บข้อมูลเท่าที่จำเป็น")}</p>
             <h2>${copy("由你決定要提供的內容", "You decide what to share", "คุณเป็นผู้ตัดสินใจว่าจะแชร์ข้อมูลใด")}</h2>
             <p>${copy("點選下方按鈕會開啟你的電子郵件程式。只有在你自行按下寄送後，郵件內容才會送達本公司；網站不會預先蒐集、暫存或寫入你的姓名、信箱、電話與需求資料。", "The button below opens your own email app. Only after you choose to send will your message reach us; this website does not pre-collect, temporarily store or write your name, email, phone number or enquiry details.", "ปุ่มด้านล่างจะเปิดโปรแกรมอีเมลของคุณ ข้อความจะส่งถึงเราเมื่อคุณเลือกส่งเองเท่านั้น เว็บไซต์นี้จะไม่เก็บ รอจัดเก็บ หรือบันทึกชื่อ อีเมล โทรศัพท์ หรือรายละเอียดคำถามของคุณล่วงหน้า")}</p>
             <a class="button button-primary" href="mailto:${esc(company.email)}"><span>${copy("開啟電子郵件", "Open your email app", "เปิดโปรแกรมอีเมล")}</span>${icons.mail}</a>
