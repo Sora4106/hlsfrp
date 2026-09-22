@@ -133,6 +133,7 @@
 
   function renderFooter() {
     const company = state.data.company;
+    const businessNumber = copy("統一編號：90736328", "Taiwan Unified Business No.: 90736328", "เลขประจำตัวผู้เสียภาษีไต้หวัน: 90736328");
     $("#site-footer").innerHTML = `
       <div class="footer-main">
         <div class="container footer-grid">
@@ -151,6 +152,7 @@
             <div class="footer-contact">
               <a href="tel:${esc(company.phone)}">${esc(company.phone)}</a>
               <a href="mailto:${esc(company.email)}">${esc(company.email)}</a>
+              <span>${esc(businessNumber)}</span>
               <span>${esc(t(company.address))}</span>
             </div>
           </div>
@@ -539,6 +541,7 @@
   function renderPrivacy() {
     const company = state.data.company;
     const email = `<a href="mailto:${esc(company.email)}">${esc(company.email)}</a>`;
+    const businessNumber = copy("統一編號：90736328", "Taiwan Unified Business No.: 90736328", "เลขประจำตัวผู้เสียภาษีไต้หวัน: 90736328");
     setMeta(copy("隱私權政策", "Privacy notice", "นโยบายความเป็นส่วนตัว"), copy("好利生實業網站的個人資料與電子郵件處理說明。", "How Hou Li Sheng handles personal data and email enquiries.", "คำอธิบายการจัดการข้อมูลส่วนบุคคลและอีเมลของเว็บไซต์โฮ่ว ลี่ เซิง"));
     return `
       ${renderPageHero(copy("隱私權政策", "PRIVACY NOTICE", "นโยบายความเป็นส่วนตัว"), copy("隱私權政策", "Privacy notice", "นโยบายความเป็นส่วนตัว"), "public/assets/optimized/17_u2wr.webp")}
@@ -553,7 +556,7 @@
 
             <section class="privacy-item">
               <h2>${copy("1. 資料控制者與聯絡方式", "1. Who is responsible", "1. ผู้รับผิดชอบข้อมูล")}</h2>
-              <p>${esc(t(company.name))}；${esc(t(company.address))}。${copy("如有隱私權、查詢、更正或刪除資料的需求，請來信", "For privacy questions or requests to access, correct or delete your data, email", "หากมีคำถามด้านความเป็นส่วนตัว หรือต้องการขอเข้าถึง แก้ไข หรือลบข้อมูล โปรดส่งอีเมลถึง")} ${email}。</p>
+              <p>${esc(t(company.name))}；${esc(businessNumber)}；${esc(t(company.address))}。${copy("如有隱私權、查詢、更正或刪除資料的需求，請來信", "For privacy questions or requests to access, correct or delete your data, email", "หากมีคำถามด้านความเป็นส่วนตัว หรือต้องการขอเข้าถึง แก้ไข หรือลบข้อมูล โปรดส่งอีเมลถึง")} ${email}。</p>
             </section>
 
             <section class="privacy-item">
