@@ -24,7 +24,7 @@
 - Name：`hls-site-assets`
 - Public bucket：開啟
 - Allowed MIME types：`image/webp`、`video/mp4`、`video/webm`
-- File size limit：`100 MB`
+- File size limit：`50 MB`（Free 方案的單檔上限）
 
 管理工具會在使用者電腦的瀏覽器中，將 JPG、PNG、WebP、GIF、BMP 或 AVIF 自動縮放至最長邊 2400px、轉成 WebP，再上傳至這個 bucket。影片可上傳 MP4 或 WebM，會保留原始影片格式並直接供產品頁播放；建議使用 H.264/AAC 編碼的 MP4，以取得最廣泛的相容性。檔案本體由 Supabase Storage 保存，`hls_media` 資料表則保存公開網址、儲存路徑、原始檔名、尺寸及檔案大小，供網站與管理工具取用。
 

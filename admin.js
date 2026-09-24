@@ -15,7 +15,7 @@
   const CONTENT_FORMAT = "hls-content-v1";
   const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
   const MAX_IMPORT_RECORDS = 100;
-  const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
+  const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
   const MAX_VIDEO_UPLOADS = 3;
   const typeLabels = {
     news: "消息",
@@ -238,7 +238,7 @@
           <strong>拖曳圖片或影片到這裡</strong>
           <p>圖片支援 JPG、PNG、WebP、GIF、BMP、AVIF，會自動轉成 WebP；影片支援 MP4、WebM，可直接在產品頁播放。</p>
           <button class="primary-button" type="button" data-action="upload-media" data-media-kind="any">選擇媒體</button>
-          <small>圖片原始檔最大 25 MB；影片最大 100 MB。一次最多 10 張圖片或 3 部影片。</small>
+          <small>圖片原始檔最大 25 MB；影片最大 50 MB。一次最多 10 張圖片或 3 部影片。</small>
         </div>`;
       return;
     }
@@ -948,7 +948,7 @@
       return { ...image, kind: "image" };
     }
     if (!file.size) throw new Error(`${file.name || "檔案"} 不是有效的影片檔。`);
-    if (file.size > MAX_VIDEO_BYTES) throw new Error(`${file.name} 超過 100 MB。`);
+    if (file.size > MAX_VIDEO_BYTES) throw new Error(`${file.name} 超過 50 MB。`);
     const video = await readVideoMetadata(file, mimeType);
     return { ...video, originalName: file.name || "video", kind: "video" };
   }

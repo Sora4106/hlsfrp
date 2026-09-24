@@ -26,9 +26,9 @@ begin
   alter table public.hls_media add constraint hls_media_mime_type_check
     check (mime_type in ('image/webp', 'video/mp4', 'video/webm'));
   alter table public.hls_media add constraint hls_media_size_bytes_check
-    check (size_bytes between 1 and 104857600);
+    check (size_bytes between 1 and 52428800);
   alter table public.hls_media add constraint hls_media_original_size_check
-    check (original_size_bytes is null or original_size_bytes between 1 and 104857600);
+    check (original_size_bytes is null or original_size_bytes between 1 and 52428800);
 end;
 $$;
 

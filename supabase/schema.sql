@@ -91,7 +91,7 @@ create table if not exists public.hls_media (
   mime_type text not null default 'image/webp' check (mime_type in ('image/webp', 'video/mp4', 'video/webm')),
   width integer not null check (width between 1 and 30000),
   height integer not null check (height between 1 and 30000),
-  size_bytes bigint not null check (size_bytes between 1 and 104857600),
+  size_bytes bigint not null check (size_bytes between 1 and 52428800),
   created_by uuid default auth.uid() references auth.users(id) on delete set null,
   created_at timestamptz not null default now()
 );
@@ -118,9 +118,9 @@ begin
   alter table public.hls_media add constraint hls_media_mime_type_check
     check (mime_type in ('image/webp', 'video/mp4', 'video/webm'));
   alter table public.hls_media add constraint hls_media_size_bytes_check
-    check (size_bytes between 1 and 104857600);
+    check (size_bytes between 1 and 52428800);
   alter table public.hls_media add constraint hls_media_original_size_check
-    check (original_size_bytes is null or original_size_bytes between 1 and 104857600);
+    check (original_size_bytes is null or original_size_bytes between 1 and 52428800);
 end;
 $$;
 
@@ -249,7 +249,7 @@ for all to authenticated using (public.hls_is_admin()) with check (public.hls_is
 drop policy if exists "hls_inquiries_public_insert" on public.hls_inquiries;
 
 -- Create a PUBLIC Storage bucket named hls-site-assets in the Supabase dashboard.
--- Allow image/webp, video/mp4 and video/webm; use a 100 MB file-size limit.
+-- Allow image/webp, video/mp4 and video/webm; use a 50 MB file-size limit.
 -- Storage file operations must use the Storage API; these policies restrict
 -- upload, replacement and deletion to users listed in public.hls_admins.
 drop policy if exists "hls_storage_admin_insert" on storage.objects;
