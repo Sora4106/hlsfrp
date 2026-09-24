@@ -28,7 +28,7 @@ data.categories.forEach((item, index) => {
 
 lines.push("");
 data.products.forEach((item, index) => {
-  lines.push(`insert into public.hls_products (id, category_id, name, summary, features, applications, specifications, images, spec_images, sort_order, published) values (${sql(item.id)}, ${sql(item.category)}, ${json(item.name)}, ${json(item.summary)}, ${json(item.features || [])}, ${json(item.applications)}, ${json(item.specifications)}, ${texts(item.images)}, ${texts(item.specImages)}, ${index}, ${bool(true)}) on conflict (id) do update set category_id = excluded.category_id, name = excluded.name, summary = excluded.summary, features = excluded.features, applications = excluded.applications, specifications = excluded.specifications, images = excluded.images, spec_images = excluded.spec_images, sort_order = excluded.sort_order;`);
+  lines.push(`insert into public.hls_products (id, category_id, name, summary, features, applications, specifications, images, spec_images, videos, sort_order, published) values (${sql(item.id)}, ${sql(item.category)}, ${json(item.name)}, ${json(item.summary)}, ${json(item.features || [])}, ${json(item.applications)}, ${json(item.specifications)}, ${texts(item.images)}, ${texts(item.specImages)}, ${texts(item.videos || [])}, ${index}, ${bool(true)}) on conflict (id) do update set category_id = excluded.category_id, name = excluded.name, summary = excluded.summary, features = excluded.features, applications = excluded.applications, specifications = excluded.specifications, images = excluded.images, spec_images = excluded.spec_images, sort_order = excluded.sort_order;`);
 });
 
 lines.push("");

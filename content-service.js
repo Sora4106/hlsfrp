@@ -93,6 +93,7 @@
       specifications: row.specifications,
       images: Array.isArray(row.images) ? row.images : [],
       specImages: Array.isArray(row.spec_images) ? row.spec_images : [],
+      videos: Array.isArray(row.videos) ? row.videos : [],
     })) : [];
     categories.forEach((category) => {
       category.products = products.filter((product) => product.category === category.id).map((product) => product.id);
@@ -215,18 +216,24 @@
   }
 
   async function uploadMedia(blob, details, token) {
-    if (!(blob instanceof Blob) || blob.type !== "image/webp") throw new Error("Only optimized WebP files can be uploaded.");
+    const supportedTypes = new Map([
+      ["image/webp", "webp"],
+      ["video/mp4", "mp4"],
+      ["video/webm", "webm"],
+    ]);
+    const extension = supportedTypes.get(blob?.type);
+    if (!(blob instanceof Blob) || !extension) throw new Error("僅支援 WebP、MP4 或 WebM 檔案。");
     const folder = ["products", "categories", "locations", "library"].includes(details.folder) ? details.folder : "library";
     const uuid = globalThis.crypto && typeof globalThis.crypto.randomUUID === "function"
       ? globalThis.crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const month = new Date().toISOString().slice(0, 7).replace("-", "/");
-    const storagePath = `${folder}/${month}/${uuid}.webp`;
+    const storagePath = `${folder}/${month}/${uuid}.${extension}`;
     await storageRequest(`/object/${MEDIA_BUCKET}/${encodedStoragePath(storagePath)}`, {
       method: "POST",
       token,
       headers: {
-        "Content-Type": "image/webp",
+        "Content-Type": blob.type,
         "Cache-Control": "31536000",
         "x-upsert": "false",
       },
@@ -236,9 +243,9 @@
       bucket_id: MEDIA_BUCKET,
       storage_path: storagePath,
       public_url: mediaPublicUrl(storagePath),
-      original_name: String(details.originalName || "image").slice(0, 500),
+      original_name: String(details.originalName || "media").slice(0, 500),
       original_size_bytes: Number(details.originalSize) || blob.size,
-      mime_type: "image/webp",
+      mime_type: blob.type,
       width: details.width,
       height: details.height,
       size_bytes: blob.size,
@@ -254,7 +261,7 @@
     } catch (error) {
       try { await removeStorageObject(storagePath, token); } catch { /* Avoid masking the metadata error. */ }
       if (/duplicate key|hls_media_original_signature_idx|23505/i.test(error.message)) {
-        throw new Error("相同檔名與檔案大小的圖片已存在，請改從圖片庫選擇。");
+        throw new Error("相同檔名與檔案大小的媒體已存在，請改從媒體庫選擇。");
       }
       throw error;
     }
@@ -285,7 +292,7 @@
   async function deleteMedia(media, token) {
     const usage = await getMediaUsage(media.public_url, token);
     const total = Object.values(usage || {}).reduce((sum, value) => sum + (Number(value) || 0), 0);
-    if (total) throw new Error(`這張圖片仍被 ${total} 筆網站內容使用，請先從內容中移除。`);
+    if (total) throw new Error(`這個媒體仍被 ${total} 筆網站內容使用，請先從內容中移除。`);
     await removeStorageObject(media.storage_path, token);
     await apiRequest(`/rest/v1/${TABLES.media}?id=eq.${encodeURIComponent(media.id)}`, {
       method: "DELETE",

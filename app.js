@@ -372,6 +372,7 @@
 
   function renderProductDetail(product) {
     const category = categoryById(product.category);
+    const videos = Array.isArray(product.videos) ? product.videos : [];
     setMeta(t(product.name), t(product.summary));
     return `
       <section class="product-detail-hero">
@@ -384,6 +385,7 @@
             <div class="product-detail-actions">
               ${buttonLink(routeHref("contact"), ui("contactUs"))}
               ${scrollButton("product-results", ui("gallery"))}
+              ${videos.length ? scrollButton("product-videos", copy("產品影片", "Product videos", "วิดีโอผลิตภัณฑ์")) : ""}
               ${scrollButton("product-specifications", ui("specifications"))}
             </div>
           </div>
@@ -415,6 +417,22 @@
           </div>
         </div>
       </section>
+      ${videos.length ? `
+        <section id="product-videos" class="section product-video-section">
+          <div class="container">
+            ${sectionHeading(copy("產品影片", "PRODUCT VIDEOS", "วิดีโอผลิตภัณฑ์"), copy("影片介紹", "Video introduction", "วิดีโอแนะนำ"), copy("可直接在此播放產品介紹與操作影片。", "Play product introductions and demonstrations here.", "รับชมวิดีโอแนะนำผลิตภัณฑ์และการใช้งานได้ที่นี่"))}
+            <div class="product-video-grid">
+              ${videos.map((video, index) => `
+                <article class="product-video-card reveal">
+                  <video controls preload="metadata" playsinline aria-label="${esc(t(product.name))} ${copy("影片", "video", "วิดีโอ")} ${index + 1}">
+                    <source src="${esc(video)}" />
+                    ${copy("您的瀏覽器不支援影片播放；請使用下方連結開啟影片。", "Your browser cannot play this video; use the link below.", "เบราว์เซอร์ของคุณไม่รองรับวิดีโอนี้ โปรดใช้ลิงก์ด้านล่าง")}
+                  </video>
+                  <a href="${esc(video)}" target="_blank" rel="noopener noreferrer">${copy("開啟影片", "Open video", "เปิดวิดีโอ")}</a>
+                </article>`).join("")}
+            </div>
+          </div>
+        </section>` : ""}
       <section id="product-specifications" class="section product-specification-section">
         <div class="container">
           ${sectionHeading(copy("產品資料", "PRODUCT DATA", "ข้อมูลผลิตภัณฑ์"), ui("specifications"), t(product.specifications))}

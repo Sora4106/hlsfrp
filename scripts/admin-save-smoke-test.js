@@ -27,6 +27,7 @@ function productForm(published) {
   form.set("category_id", "farming");
   form.set("name_zh", "智慧環境監測感測器");
   form.set("images", "https://example.supabase.co/storage/v1/object/public/hls-site-assets/products/sensor.webp");
+  form.set("videos", "https://example.supabase.co/storage/v1/object/public/hls-site-assets/products/sensor-intro.mp4");
   form.set("sort_order", "12");
   if (published) form.set("published", "on");
   return form;
@@ -34,6 +35,11 @@ function productForm(published) {
 
 assert.equal(rowFromForm(productForm(true)).published, true, "checked content must be published");
 assert.equal(rowFromForm(productForm(false)).published, false, "unchecked content must remain a draft");
+assert.deepEqual(
+  [...rowFromForm(productForm(true)).videos],
+  ["https://example.supabase.co/storage/v1/object/public/hls-site-assets/products/sensor-intro.mp4"],
+  "product video URLs must be saved with the product"
+);
 
 async function testSessionRefresh() {
   const refreshStart = source.indexOf("  function normalizeSession");

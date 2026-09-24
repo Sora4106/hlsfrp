@@ -18,7 +18,7 @@ const logo = fs.readFileSync(path.join(root, "public", "assets", "optimized", "1
 html = html
   .replace(
     /<meta\s+http-equiv="Content-Security-Policy"[\s\S]*?\/>/i,
-    '<meta http-equiv="Content-Security-Policy" content="default-src data: blob:; script-src \'unsafe-inline\'; style-src \'unsafe-inline\'; img-src data: https://*.supabase.co; connect-src https://*.supabase.co; object-src \'none\'; base-uri \'none\'; form-action \'none\'" />'
+    '<meta http-equiv="Content-Security-Policy" content="default-src data: blob:; script-src \'unsafe-inline\'; style-src \'unsafe-inline\'; img-src data: https://*.supabase.co; media-src data: blob: https://*.supabase.co; connect-src https://*.supabase.co; object-src \'none\'; base-uri \'none\'; form-action \'none\'" />'
   )
   .replace(/\s*<link rel="icon"[^>]*\/>/i, "")
   .replace(/\s*<link rel="stylesheet" href="admin\.css"\s*\/>/i, () => `\n    <style>\n${css}\n    </style>`)
@@ -37,7 +37,7 @@ fs.writeFileSync(
     "1. 直接雙擊「好利生網站內容管理.html」。不需要安裝或啟動任何程式。",
     "2. 第一次使用時貼上 Supabase Project URL 與 Publishable Key。",
     "3. 使用管理員自己的 Email 與密碼登入。",
-    "4. 到「圖片庫」即可拖曳或選擇圖片；系統會自動轉成 WebP 後上傳。",
+    "4. 到「媒體庫」即可拖曳或選擇圖片、MP4 或 WebM；圖片會自動轉成 WebP，影片會保留格式後上傳。",
     "5. 若 Windows 詢問開啟方式，選擇 Microsoft Edge 或 Google Chrome。",
     "",
     "注意：",

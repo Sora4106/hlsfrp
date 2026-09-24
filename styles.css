@@ -1557,6 +1557,43 @@ svg {
   margin-bottom: 45px;
 }
 
+.product-video-section {
+  background: var(--mist);
+  scroll-margin-top: 125px;
+}
+
+.product-video-section .section-heading {
+  margin-bottom: 45px;
+}
+
+.product-video-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.product-video-card {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--white);
+  box-shadow: 0 14px 35px rgba(8, 105, 148, 0.08);
+}
+
+.product-video-card video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #dff4fc;
+}
+
+.product-video-card a {
+  display: inline-flex;
+  margin: 14px 18px 17px;
+  color: var(--sky-700);
+  font-weight: 750;
+}
+
 .detail-gallery {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2693,6 +2730,10 @@ svg {
   }
 
   .detail-gallery {
+    grid-template-columns: 1fr;
+  }
+
+  .product-video-grid {
     grid-template-columns: 1fr;
   }
 

@@ -7,7 +7,7 @@
     <meta name="robots" content="noindex,nofollow,noarchive" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://*.supabase.co; media-src 'self' blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"
     />
     <link rel="icon" href="public/assets/legacy/www.ico" />
     <link rel="stylesheet" href="admin.css" />
@@ -22,7 +22,7 @@
     <header class="admin-topbar">
       <a class="admin-brand" href="index.html#/home">
         <img src="public/assets/optimized/11_n090.webp" width="259" height="154" alt="" />
-        <span><strong>好利生內容管理</strong><small>HLS CONTENT STUDIO · ADMIN 1.3.0</small></span>
+        <span><strong>好利生內容管理</strong><small>HLS CONTENT STUDIO · ADMIN 1.4.0</small></span>
       </a>
       <div class="admin-actions">
         <a href="index.html#/home">查看網站</a>
@@ -64,7 +64,7 @@
           <button type="button" data-type="products">產品</button>
           <button type="button" data-type="categories">產品分類</button>
           <button type="button" data-type="locations">服務據點</button>
-          <button type="button" data-type="media">圖片庫</button>
+          <button type="button" data-type="media">媒體庫</button>
           <button type="button" data-type="inquiries">歷史詢問</button>
         </nav>
         <div id="admin-activity" class="admin-activity" role="status" aria-live="polite">
@@ -104,18 +104,18 @@
     <dialog id="media-picker" class="media-picker" aria-labelledby="media-picker-title">
       <div class="media-picker-shell">
         <header class="media-picker-header">
-          <div><p class="admin-eyebrow">SUPABASE MEDIA</p><h2 id="media-picker-title">從圖片庫選擇</h2></div>
-          <button class="media-picker-close" type="button" data-action="close-media-picker" aria-label="關閉圖片庫">×</button>
+          <div><p class="admin-eyebrow">SUPABASE MEDIA</p><h2 id="media-picker-title">從媒體庫選擇</h2></div>
+          <button class="media-picker-close" type="button" data-action="close-media-picker" aria-label="關閉媒體庫">×</button>
         </header>
-        <label class="media-picker-search">搜尋原始檔名<input id="media-picker-search" type="search" placeholder="輸入圖片名稱…" maxlength="200" autocomplete="off" /></label>
-        <div id="media-picker-grid" class="media-picker-grid"><p>正在讀取圖片庫…</p></div>
+        <label class="media-picker-search">搜尋原始檔名<input id="media-picker-search" type="search" placeholder="輸入媒體名稱…" maxlength="200" autocomplete="off" /></label>
+        <div id="media-picker-grid" class="media-picker-grid"><p>正在讀取媒體庫…</p></div>
         <footer class="media-picker-footer">
-          <span id="media-picker-count">尚未選擇圖片</span>
-          <button id="apply-media-selection" class="primary-button" type="button" data-action="apply-media-selection">加入已選圖片</button>
+          <span id="media-picker-count">尚未選擇媒體</span>
+          <button id="apply-media-selection" class="primary-button" type="button" data-action="apply-media-selection">加入已選媒體</button>
         </footer>
       </div>
     </dialog>
-    <input id="media-upload-input" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,image/avif" multiple hidden />
+    <input id="media-upload-input" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,image/avif,video/mp4,video/webm,.jpg,.jpeg,.png,.webp,.gif,.bmp,.avif,.mp4,.webm" multiple hidden />
     <div id="admin-status" class="admin-status" role="status" aria-live="polite"></div>
   </body>
 </html>

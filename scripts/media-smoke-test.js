@@ -90,6 +90,18 @@ async function testStorageWorkflow() {
   assert.equal(requests[0].options.headers["Content-Type"], "image/webp");
   assert.ok(requests.some((item) => item.url.includes("/rest/v1/hls_media")), "hls_media metadata was not written");
 
+  const video = await context.window.HLSContentService.uploadMedia(
+    new Blob(["mp4"], { type: "video/mp4" }),
+    { folder: "products", originalName: "factory-tour.mp4", originalSize: 4096, width: 1920, height: 1080 },
+    "admin-token"
+  );
+  assert.equal(video.mime_type, "video/mp4");
+  assert.match(video.storage_path, /\.mp4$/);
+  assert.ok(
+    requests.some((item) => item.url.includes(".mp4") && item.options.headers["Content-Type"] === "video/mp4"),
+    "MP4 video bytes must be uploaded with the video MIME type"
+  );
+
   duplicateRows = [media];
   assert.equal(
     (await context.window.HLSContentService.findDuplicateMedia("product.png", 2048, media.size_bytes, "admin-token")).id,

@@ -29,6 +29,7 @@ create table if not exists public.hls_products (
   specifications jsonb not null default '{}'::jsonb,
   images text[] not null default '{}',
   spec_images text[] not null default '{}',
+  videos text[] not null default '{}',
   sort_order integer not null default 0,
   published boolean not null default true,
   created_at timestamptz not null default now(),
@@ -87,25 +88,39 @@ create table if not exists public.hls_media (
   public_url text not null unique,
   original_name text not null check (char_length(original_name) between 1 and 500),
   original_size_bytes bigint,
-  mime_type text not null default 'image/webp' check (mime_type = 'image/webp'),
+  mime_type text not null default 'image/webp' check (mime_type in ('image/webp', 'video/mp4', 'video/webm')),
   width integer not null check (width between 1 and 30000),
   height integer not null check (height between 1 and 30000),
-  size_bytes bigint not null check (size_bytes between 1 and 10485760),
+  size_bytes bigint not null check (size_bytes between 1 and 104857600),
   created_by uuid default auth.uid() references auth.users(id) on delete set null,
   created_at timestamptz not null default now()
 );
 
+alter table public.hls_products add column if not exists videos text[] not null default '{}';
 alter table public.hls_media add column if not exists original_size_bytes bigint;
 do $$
+declare
+  constraint_name text;
 begin
-  if not exists (
-    select 1 from pg_constraint
-    where conname = 'hls_media_original_size_check'
-      and conrelid = 'public.hls_media'::regclass
-  ) then
-    alter table public.hls_media add constraint hls_media_original_size_check
-      check (original_size_bytes is null or original_size_bytes between 1 and 26214400);
-  end if;
+  for constraint_name in
+    select conname
+    from pg_constraint
+    where conrelid = 'public.hls_media'::regclass
+      and contype = 'c'
+      and (
+        pg_get_constraintdef(oid) ilike '%mime_type%'
+        or (pg_get_constraintdef(oid) ilike '%size_bytes%' and pg_get_constraintdef(oid) not ilike '%original_size_bytes%')
+      )
+  loop
+    execute format('alter table public.hls_media drop constraint %I', constraint_name);
+  end loop;
+  alter table public.hls_media drop constraint if exists hls_media_original_size_check;
+  alter table public.hls_media add constraint hls_media_mime_type_check
+    check (mime_type in ('image/webp', 'video/mp4', 'video/webm'));
+  alter table public.hls_media add constraint hls_media_size_bytes_check
+    check (size_bytes between 1 and 104857600);
+  alter table public.hls_media add constraint hls_media_original_size_check
+    check (original_size_bytes is null or original_size_bytes between 1 and 104857600);
 end;
 $$;
 
@@ -193,7 +208,7 @@ set search_path = public
 as $$
   select case when public.hls_is_admin() then jsonb_build_object(
     'categories', (select count(*) from public.hls_product_categories where image = p_url),
-    'products', (select count(*) from public.hls_products where p_url = any(images) or p_url = any(spec_images)),
+    'products', (select count(*) from public.hls_products where p_url = any(images) or p_url = any(spec_images) or p_url = any(videos)),
     'locations', (select count(*) from public.hls_locations where image = p_url)
   ) else null end;
 $$;
@@ -234,6 +249,7 @@ for all to authenticated using (public.hls_is_admin()) with check (public.hls_is
 drop policy if exists "hls_inquiries_public_insert" on public.hls_inquiries;
 
 -- Create a PUBLIC Storage bucket named hls-site-assets in the Supabase dashboard.
+-- Allow image/webp, video/mp4 and video/webm; use a 100 MB file-size limit.
 -- Storage file operations must use the Storage API; these policies restrict
 -- upload, replacement and deletion to users listed in public.hls_admins.
 drop policy if exists "hls_storage_admin_insert" on storage.objects;
