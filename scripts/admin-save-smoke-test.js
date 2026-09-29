@@ -6,11 +6,11 @@ const path = require("node:path");
 const vm = require("node:vm");
 
 const source = fs.readFileSync(path.resolve(__dirname, "..", "admin.js"), "utf8");
-const start = source.indexOf("  function formText");
+const start = source.indexOf("  function youtubeVideoId");
 const end = source.indexOf("\n  async function saveEditor", start);
-assert.ok(start >= 0 && end > start, "form serialization functions were not found");
+assert.ok(start >= 0 && end > start, "video URL and form serialization functions were not found");
 
-const context = { FormData };
+const context = { FormData, URL };
 const rowFromForm = vm.runInNewContext(`
   (function () {
     const state = { type: "products", rows: [], selectedIndex: -1 };
@@ -27,7 +27,7 @@ function productForm(published) {
   form.set("category_id", "farming");
   form.set("name_zh", "智慧環境監測感測器");
   form.set("images", "https://example.supabase.co/storage/v1/object/public/hls-site-assets/products/sensor.webp");
-  form.set("videos", "https://example.supabase.co/storage/v1/object/public/hls-site-assets/products/sensor-intro.mp4");
+  form.set("videos", "https://youtu.be/M7lc1UVf-VE");
   form.set("sort_order", "12");
   if (published) form.set("published", "on");
   return form;
@@ -37,8 +37,8 @@ assert.equal(rowFromForm(productForm(true)).published, true, "checked content mu
 assert.equal(rowFromForm(productForm(false)).published, false, "unchecked content must remain a draft");
 assert.deepEqual(
   [...rowFromForm(productForm(true)).videos],
-  ["https://example.supabase.co/storage/v1/object/public/hls-site-assets/products/sensor-intro.mp4"],
-  "product video URLs must be saved with the product"
+  ["https://www.youtube.com/watch?v=M7lc1UVf-VE"],
+  "YouTube product video URLs must be canonicalized and saved with the product"
 );
 
 async function testSessionRefresh() {

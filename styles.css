@@ -1580,10 +1580,11 @@ svg {
   box-shadow: 0 14px 35px rgba(8, 105, 148, 0.08);
 }
 
-.product-video-card video {
+.product-video-card iframe {
   display: block;
   width: 100%;
   aspect-ratio: 16 / 9;
+  border: 0;
   background: #dff4fc;
 }
 

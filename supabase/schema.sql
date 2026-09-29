@@ -88,10 +88,10 @@ create table if not exists public.hls_media (
   public_url text not null unique,
   original_name text not null check (char_length(original_name) between 1 and 500),
   original_size_bytes bigint,
-  mime_type text not null default 'image/webp' check (mime_type in ('image/webp', 'video/mp4', 'video/webm')),
+  mime_type text not null default 'image/webp' check (mime_type = 'image/webp'),
   width integer not null check (width between 1 and 30000),
   height integer not null check (height between 1 and 30000),
-  size_bytes bigint not null check (size_bytes between 1 and 52428800),
+  size_bytes bigint not null check (size_bytes between 1 and 10485760),
   created_by uuid default auth.uid() references auth.users(id) on delete set null,
   created_at timestamptz not null default now()
 );
@@ -116,11 +116,11 @@ begin
   end loop;
   alter table public.hls_media drop constraint if exists hls_media_original_size_check;
   alter table public.hls_media add constraint hls_media_mime_type_check
-    check (mime_type in ('image/webp', 'video/mp4', 'video/webm'));
+    check (mime_type = 'image/webp');
   alter table public.hls_media add constraint hls_media_size_bytes_check
-    check (size_bytes between 1 and 52428800);
+    check (size_bytes between 1 and 10485760);
   alter table public.hls_media add constraint hls_media_original_size_check
-    check (original_size_bytes is null or original_size_bytes between 1 and 52428800);
+    check (original_size_bytes is null or original_size_bytes between 1 and 26214400);
 end;
 $$;
 
@@ -208,7 +208,7 @@ set search_path = public
 as $$
   select case when public.hls_is_admin() then jsonb_build_object(
     'categories', (select count(*) from public.hls_product_categories where image = p_url),
-    'products', (select count(*) from public.hls_products where p_url = any(images) or p_url = any(spec_images) or p_url = any(videos)),
+    'products', (select count(*) from public.hls_products where p_url = any(images) or p_url = any(spec_images)),
     'locations', (select count(*) from public.hls_locations where image = p_url)
   ) else null end;
 $$;
@@ -249,7 +249,7 @@ for all to authenticated using (public.hls_is_admin()) with check (public.hls_is
 drop policy if exists "hls_inquiries_public_insert" on public.hls_inquiries;
 
 -- Create a PUBLIC Storage bucket named hls-site-assets in the Supabase dashboard.
--- Allow image/webp, video/mp4 and video/webm; use a 50 MB file-size limit.
+-- Allow image/webp only; use a 10 MB file-size limit.
 -- Storage file operations must use the Storage API; these policies restrict
 -- upload, replacement and deletion to users listed in public.hls_admins.
 drop policy if exists "hls_storage_admin_insert" on storage.objects;

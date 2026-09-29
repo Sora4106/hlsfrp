@@ -38,6 +38,31 @@
   const categoryById = (id) => state.data.categories.find((category) => category.id === id);
   const thumbnailPath = (path) => path.includes("/optimized/") ? path.replace(/\.webp$/i, "-card.webp") : path;
 
+  function youtubeVideoId(value) {
+    try {
+      const url = new URL(String(value || ""));
+      const host = url.hostname.toLowerCase().replace(/^www\./, "");
+      let id = "";
+      if (host === "youtu.be") id = url.pathname.split("/").filter(Boolean)[0] || "";
+      if (host === "youtube.com" || host === "m.youtube.com") {
+        if (url.pathname === "/watch") id = url.searchParams.get("v") || "";
+        else id = url.pathname.match(/^\/(?:embed|shorts|live)\/([^/?#]+)/i)?.[1] || "";
+      }
+      return /^[A-Za-z0-9_-]{6,20}$/.test(id) ? id : "";
+    } catch {
+      return "";
+    }
+  }
+
+  function youtubeVideo(value) {
+    const id = youtubeVideoId(value);
+    return id ? {
+      id,
+      watchUrl: `https://www.youtube.com/watch?v=${id}`,
+      embedUrl: `https://www.youtube-nocookie.com/embed/${id}?rel=0&playsinline=1`,
+    } : null;
+  }
+
   function requestedSection() {
     const query = location.hash.split("?")[1] || "";
     const section = new URLSearchParams(query).get("section");
@@ -372,7 +397,7 @@
 
   function renderProductDetail(product) {
     const category = categoryById(product.category);
-    const videos = Array.isArray(product.videos) ? product.videos : [];
+    const videos = (Array.isArray(product.videos) ? product.videos : []).map(youtubeVideo).filter(Boolean);
     setMeta(t(product.name), t(product.summary));
     return `
       <section class="product-detail-hero">
@@ -424,11 +449,8 @@
             <div class="product-video-grid">
               ${videos.map((video, index) => `
                 <article class="product-video-card reveal">
-                  <video controls preload="metadata" playsinline aria-label="${esc(t(product.name))} ${copy("影片", "video", "วิดีโอ")} ${index + 1}">
-                    <source src="${esc(video)}" />
-                    ${copy("您的瀏覽器不支援影片播放；請使用下方連結開啟影片。", "Your browser cannot play this video; use the link below.", "เบราว์เซอร์ของคุณไม่รองรับวิดีโอนี้ โปรดใช้ลิงก์ด้านล่าง")}
-                  </video>
-                  <a href="${esc(video)}" target="_blank" rel="noopener noreferrer">${copy("開啟影片", "Open video", "เปิดวิดีโอ")}</a>
+                  <iframe src="${esc(video.embedUrl)}" title="${esc(t(product.name))} ${copy("影片", "video", "วิดีโอ")} ${index + 1}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+                  <a href="${esc(video.watchUrl)}" target="_blank" rel="noopener noreferrer">${copy("在 YouTube 開啟", "Open on YouTube", "เปิดใน YouTube")}</a>
                 </article>`).join("")}
             </div>
           </div>

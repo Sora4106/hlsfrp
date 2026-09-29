@@ -15,14 +15,12 @@
   const CONTENT_FORMAT = "hls-content-v1";
   const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
   const MAX_IMPORT_RECORDS = 100;
-  const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
-  const MAX_VIDEO_UPLOADS = 3;
   const typeLabels = {
     news: "消息",
     products: "產品",
     categories: "產品分類",
     locations: "服務據點",
-    media: "媒體",
+    media: "圖片",
     inquiries: "歷史詢問",
   };
   const state = {
@@ -33,8 +31,6 @@
     session: null,
     uploadTarget: "",
     uploadMultiple: true,
-    uploadKind: "any",
-    pickerKind: "image",
     pickerRows: [],
     pickerSelected: new Set(),
   };
@@ -172,7 +168,7 @@
     if (state.type === "news") return row.title?.zh || row.title?.en || `消息 #${row.id || "新"}`;
     if (state.type === "products" || state.type === "categories") return row.name?.zh || row.name?.en || row.id || "未命名";
     if (state.type === "locations") return row.region?.zh || row.company?.zh || row.id || "未命名";
-    if (state.type === "media") return row.original_name || row.storage_path || "媒體";
+    if (state.type === "media") return row.original_name || row.storage_path || "圖片";
     return row.name || row.email || "歷史詢問";
   }
 
@@ -180,7 +176,7 @@
     if (state.type === "news") return `${row.published_at || "未定日期"} · ${row.published ? "已發布" : "草稿"}`;
     if (state.type === "products") return `${row.category_id || "未分類"} · ${row.published ? "已發布" : "草稿"}`;
     if (state.type === "inquiries") return `${row.status || "new"} · ${new Date(row.created_at).toLocaleString("zh-TW")}`;
-    if (state.type === "media") return `${isVideoMedia(row) ? "影片" : "圖片"} · ${row.width || 0} × ${row.height || 0} · ${formatBytes(row.size_bytes)} · ${new Date(row.created_at).toLocaleDateString("zh-TW")}`;
+    if (state.type === "media") return `${row.width || 0} × ${row.height || 0} · ${formatBytes(row.size_bytes)} · ${new Date(row.created_at).toLocaleDateString("zh-TW")}`;
     return `${row.id || "未設定 ID"} · ${row.published ? "已發布" : "草稿"}`;
   }
 
@@ -189,7 +185,7 @@
     $("#record-list").innerHTML = state.rows.length
       ? state.rows.map((row, index) => `
           <button class="record-item ${index === state.selectedIndex ? "active" : ""}" type="button" data-record-index="${index}">
-            ${state.type === "media" ? mediaListThumbnail(row) : ""}
+            ${state.type === "media" ? `<img class="record-item-thumbnail" src="${esc(row.public_url || "")}" alt="" loading="lazy" />` : ""}
             <span class="record-item-copy"><strong>${esc(titleFor(row))}${row._local ? "<em>尚未同步</em>" : ""}</strong>
             <span>${esc(subtitleFor(row))}</span></span>
           </button>`).join("")
@@ -235,10 +231,10 @@
       $("#editor").innerHTML = `
         <div class="media-upload-panel" data-media-drop>
           <span class="media-upload-icon">＋</span>
-          <strong>拖曳圖片或影片到這裡</strong>
-          <p>圖片支援 JPG、PNG、WebP、GIF、BMP、AVIF，會自動轉成 WebP；影片支援 MP4、WebM，可直接在產品頁播放。</p>
-          <button class="primary-button" type="button" data-action="upload-media" data-media-kind="any">選擇媒體</button>
-          <small>圖片原始檔最大 25 MB；影片最大 50 MB。一次最多 10 張圖片或 3 部影片。</small>
+          <strong>拖曳圖片到這裡</strong>
+          <p>支援 JPG、PNG、WebP、GIF、BMP、AVIF；上傳前會自動縮放至最長邊 2400px 並轉成 WebP。</p>
+          <button class="primary-button" type="button" data-action="upload-media">選擇圖片</button>
+          <small>單張原始檔最大 25 MB；GIF 會取第一個畫面。</small>
         </div>`;
       return;
     }
@@ -273,46 +269,61 @@
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
-  function isVideoMedia(row) {
-    return /^video\//i.test(String(row?.mime_type || ""));
-  }
-
-  function isVideoUrl(url) {
-    return /\.(mp4|webm)(?:$|[?#])/i.test(String(url || ""));
-  }
-
-  function mediaListThumbnail(row) {
-    if (isVideoMedia(row)) return '<span class="record-item-thumbnail video-thumbnail" aria-label="影片">▶</span>';
-    return `<img class="record-item-thumbnail" src="${esc(row.public_url || "")}" alt="" loading="lazy" />`;
-  }
-
-  function mediaPreview(urls) {
+  function imagePreview(urls) {
     const items = (Array.isArray(urls) ? urls : [urls]).filter(Boolean);
     if (!items.length) return '<p class="image-preview-empty">上傳後會在這裡顯示預覽。</p>';
-    return items.map((url) => isVideoUrl(url)
-      ? `<a class="media-preview-video" href="${esc(url)}" target="_blank" rel="noopener noreferrer"><video src="${esc(url)}" muted preload="metadata" playsinline></video><span>影片</span></a>`
-      : `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(url)}" alt="" loading="lazy" /></a>`).join("");
+    return items.map((url) => `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(url)}" alt="" loading="lazy" /></a>`).join("");
   }
 
-  function mediaPickerField(name, label, value, multiple = false, required = false, kind = "image") {
+  function imagePickerField(name, label, value, multiple = false, required = false) {
     const urls = multiple ? (Array.isArray(value) ? value : []) : [value || ""];
     const control = multiple
       ? `<textarea name="${name}" maxlength="12000" ${required ? "required" : ""}>${esc(urls.join("\n"))}</textarea>`
       : `<input name="${name}" value="${esc(value || "")}" maxlength="1000" ${required ? "required" : ""} />`;
-    const isVideo = kind === "video";
-    const uploadLabel = isVideo ? "選擇 MP4／WebM 影片" : "選擇圖片並轉成 WebP";
-    const selectionHint = multiple
-      ? (isVideo ? "可選多部；每行會自動填入一個影片網址。" : "可選多張；每行會自動填入一個圖片網址。")
-      : (isVideo ? "新影片會取代欄位中的網址。" : "新圖片會取代欄位中的網址。");
     return `
       <div class="image-field wide">
         <label>${esc(label)}${control}</label>
         <div class="image-field-actions">
-          <button class="secondary-button" type="button" data-action="upload-media" data-upload-target="${name}" data-upload-multiple="${multiple}" data-media-kind="${kind}">${uploadLabel}</button>
-          <button class="secondary-button" type="button" data-action="choose-existing-media" data-upload-target="${name}" data-upload-multiple="${multiple}" data-media-kind="${kind}">從媒體庫選擇</button>
-          <span>${selectionHint}</span>
+          <button class="secondary-button" type="button" data-action="upload-media" data-upload-target="${name}" data-upload-multiple="${multiple}">選擇圖片並轉成 WebP</button>
+          <button class="secondary-button" type="button" data-action="choose-existing-media" data-upload-target="${name}" data-upload-multiple="${multiple}">從圖片庫選擇</button>
+          <span>${multiple ? "可選多張；每行會自動填入一個圖片網址。" : "新圖片會取代欄位中的網址。"}</span>
         </div>
-        <div class="image-preview" data-media-preview="${name}">${mediaPreview(urls)}</div>
+        <div class="image-preview" data-image-preview="${name}">${imagePreview(urls)}</div>
+      </div>`;
+  }
+
+  function youtubeVideoId(value) {
+    try {
+      const url = new URL(String(value || ""));
+      const host = url.hostname.toLowerCase().replace(/^www\./, "");
+      let id = "";
+      if (host === "youtu.be") id = url.pathname.split("/").filter(Boolean)[0] || "";
+      if (host === "youtube.com" || host === "m.youtube.com") {
+        if (url.pathname === "/watch") id = url.searchParams.get("v") || "";
+        else id = url.pathname.match(/^\/(?:embed|shorts|live)\/([^/?#]+)/i)?.[1] || "";
+      }
+      return /^[A-Za-z0-9_-]{6,20}$/.test(id) ? id : "";
+    } catch {
+      return "";
+    }
+  }
+
+  function youtubeVideoUrls(values) {
+    const urls = Array.isArray(values) ? values : [];
+    if (urls.length > 12) throw new Error("產品影片最多 12 部。");
+    return urls.map((url, index) => {
+      const id = youtubeVideoId(url);
+      if (!id) throw new Error(`產品影片第 ${index + 1} 筆必須是有效的 YouTube 網址。`);
+      return `https://www.youtube.com/watch?v=${id}`;
+    });
+  }
+
+  function youtubeVideoField(value) {
+    const urls = Array.isArray(value) ? value : [];
+    return `
+      <div class="image-field wide">
+        <label>產品影片（YouTube 網址）<textarea name="videos" maxlength="12000" placeholder="https://www.youtube.com/watch?v=影片ID&#10;https://youtu.be/影片ID">${esc(urls.join("\n"))}</textarea></label>
+        <p class="form-note">請先把影片上傳到 YouTube，再貼上分享網址；每行一部。支援 YouTube 觀看、短網址、Shorts、嵌入及直播網址，不會使用 Supabase Storage 容量。</p>
       </div>`;
   }
 
@@ -330,13 +341,13 @@
       ${commonFields(row)}
       ${localizedFields("name", "分類名稱", row.name)}
       ${localizedFields("description", "分類說明", row.description, true)}
-      ${mediaPickerField("image", "代表圖片", row.image, false, true)}`);
+      ${imagePickerField("image", "代表圖片", row.image, false, true)}`);
   }
 
   function productEditor(row) {
     const categories = state.categoryOptions.length ? state.categoryOptions : localRows("categories");
     const options = categories.map((item) => `<option value="${esc(item.id)}" ${row.category_id === item.id ? "selected" : ""}>${esc(item.name?.zh || item.id)}</option>`).join("");
-    return editorShell(row.id ? "編輯產品" : "新增產品", "圖片與影片可填網站內的 public 路徑，或 Supabase Storage 的公開網址。", `
+    return editorShell(row.id ? "編輯產品" : "新增產品", "圖片可填網站內的 public 路徑或 Supabase Storage 公開網址；影片請填 YouTube 網址。", `
       ${commonFields(row)}
       <label class="wide">產品分類<select name="category_id" required><option value="">請選擇</option>${options}</select></label>
       ${localizedFields("name", "產品名稱", row.name)}
@@ -346,9 +357,9 @@
       }, true, "三種語言請盡量維持相同項目順序。")}
       ${localizedFields("applications", "適用範圍", row.applications, true)}
       ${localizedFields("specifications", "規格說明", row.specifications, true)}
-      ${mediaPickerField("images", "產品圖片", row.images, true, true)}
-      ${mediaPickerField("spec_images", "規格圖片", row.spec_images, true)}
-      ${mediaPickerField("videos", "產品影片", row.videos, true, false, "video")}`);
+      ${imagePickerField("images", "產品圖片", row.images, true, true)}
+      ${imagePickerField("spec_images", "規格圖片", row.spec_images, true)}
+      ${youtubeVideoField(row.videos)}`);
   }
 
   function newsEditor(row) {
@@ -373,7 +384,7 @@
       ${localizedFields("region", "區域名稱", row.region)}
       ${localizedFields("company", "公司名稱", row.company)}
       ${localizedFields("address", "地址", row.address, true)}
-      ${mediaPickerField("image", "代表圖片", row.image, false, true)}
+      ${imagePickerField("image", "代表圖片", row.image, false, true)}
       <label>電話<input name="phone" value="${esc(row.phone || "")}" maxlength="80" /></label>
       <label>傳真<input name="fax" value="${esc(row.fax || "")}" maxlength="80" /></label>
       <label>電子郵件<input type="email" name="email" value="${esc(row.email || "")}" maxlength="254" /></label>
@@ -393,12 +404,9 @@
   }
 
   function mediaEditor(row) {
-    const isVideo = isVideoMedia(row);
-    const preview = isVideo
-      ? `<video class="media-detail-preview" src="${esc(row.public_url)}" controls preload="metadata" playsinline></video>`
-      : `<a class="media-detail-preview" href="${esc(row.public_url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(row.public_url)}" alt="${esc(row.original_name || "")}" /></a>`;
+    const preview = `<a class="media-detail-preview" href="${esc(row.public_url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(row.public_url)}" alt="${esc(row.original_name || "")}" /></a>`;
     return `
-      <div class="editor-title"><div><h2>${esc(row.original_name || "媒體")}</h2><p>${esc(row.storage_path || "")}</p></div></div>
+      <div class="editor-title"><div><h2>${esc(row.original_name || "圖片")}</h2><p>${esc(row.storage_path || "")}</p></div></div>
       <div class="media-detail">
         ${preview}
         <dl>
@@ -408,12 +416,12 @@
           <div><dt>儲存檔案大小</dt><dd>${formatBytes(row.size_bytes)}</dd></div>
           <div><dt>上傳時間</dt><dd>${row.created_at ? new Date(row.created_at).toLocaleString("zh-TW") : ""}</dd></div>
         </dl>
-        <label>公開媒體網址<input value="${esc(row.public_url || "")}" readonly /></label>
+        <label>公開圖片網址<input value="${esc(row.public_url || "")}" readonly /></label>
         <div class="editor-actions">
           <button class="secondary-button" type="button" data-action="copy-media-url" data-media-url="${esc(row.public_url || "")}">複製網址</button>
-          <button class="danger-button" type="button" data-action="delete-media">刪除${isVideo ? "影片" : "圖片"}</button>
+          <button class="danger-button" type="button" data-action="delete-media">刪除圖片</button>
         </div>
-        <p class="form-note">仍被產品、分類或據點使用的媒體，系統會阻止刪除。</p>
+        <p class="form-note">仍被產品、分類或據點使用的圖片，系統會阻止刪除。</p>
       </div>`;
   }
 
@@ -448,13 +456,8 @@
     return formText(form, key).split(/\n/).map((item) => item.trim()).filter(Boolean);
   }
 
-  function videoLines(form) {
-    const videos = urlLines(form, "videos");
-    if (videos.length > 12) throw new Error("產品影片最多 12 部。");
-    videos.forEach((url) => {
-      if (!/\.(mp4|webm)(?:$|[?#])/i.test(url)) throw new Error("產品影片僅支援 MP4 或 WebM 公開網址。 ");
-    });
-    return videos;
+  function youtubeLines(form) {
+    return youtubeVideoUrls(urlLines(form, "videos"));
   }
 
   function rowFromForm(form) {
@@ -478,7 +481,7 @@
       specifications: localizedFromForm(form, "specifications"),
       images: urlLines(form, "images"),
       spec_images: urlLines(form, "spec_images"),
-      videos: videoLines(form),
+      videos: youtubeLines(form),
       sort_order,
       published,
     };
@@ -631,7 +634,7 @@
       rules: [
         "id 只能使用小寫英文字母、數字及連字號；既有資料的 id 不得變更。",
         "published=false 表示草稿；確認內容後才改成 true。",
-        "圖片使用既有 public/assets 路徑或 https 公開網址，不可使用本機磁碟路徑；產品影片 videos 僅可使用 MP4 或 WebM 公開網址。",
+        "圖片使用既有 public/assets 路徑或 https 公開網址，不可使用本機磁碟路徑；產品影片 videos 僅可使用 YouTube 公開網址。",
         "產品 features 與消息 body 必須是多語物件陣列。",
         "一次最多 100 筆；匯入只會新增或更新，不會刪除資料。",
       ],
@@ -712,12 +715,8 @@
   }
 
   function normalizeVideoList(value) {
-    const videos = normalizeAssetList(value, "videos");
-    if (videos.length > 12) throw new Error("videos 最多 12 部影片。");
-    videos.forEach((url, index) => {
-      if (!/\.(mp4|webm)(?:$|[?#])/i.test(url)) throw new Error(`videos[${index}] 必須是 MP4 或 WebM 公開網址。`);
-    });
-    return videos;
+    if (!Array.isArray(value)) throw new Error("videos 必須是網址陣列。 ");
+    return youtubeVideoUrls(value);
   }
 
   function normalizeSort(value) {
@@ -899,66 +898,6 @@
     return { blob, width, height, originalName: file.name || "image" };
   }
 
-  function videoMimeType(file) {
-    const fileType = String(file.type || "").toLowerCase();
-    if (fileType === "video/mp4" || fileType === "video/webm") return fileType;
-    if (/\.mp4$/i.test(file.name || "")) return "video/mp4";
-    if (/\.webm$/i.test(file.name || "")) return "video/webm";
-    return "";
-  }
-
-  async function readVideoMetadata(file, mimeType) {
-    const blob = file.type === mimeType ? file : new Blob([file], { type: mimeType });
-    return new Promise((resolve, reject) => {
-      const video = document.createElement("video");
-      const objectUrl = URL.createObjectURL(blob);
-      const cleanup = () => {
-        URL.revokeObjectURL(objectUrl);
-        video.onloadedmetadata = null;
-        video.onerror = null;
-        video.removeAttribute("src");
-        video.load?.();
-      };
-      video.preload = "metadata";
-      video.muted = true;
-      video.playsInline = true;
-      video.onloadedmetadata = () => {
-        const width = Number(video.videoWidth);
-        const height = Number(video.videoHeight);
-        cleanup();
-        if (!width || !height || width > 30000 || height > 30000) {
-          reject(new Error(`${file.name} 的影片尺寸無效或過大。`));
-          return;
-        }
-        resolve({ blob, width, height });
-      };
-      video.onerror = () => {
-        cleanup();
-        reject(new Error(`${file.name} 無法讀取影片資料。請使用 H.264 MP4 或 WebM。`));
-      };
-      video.src = objectUrl;
-      video.load();
-    });
-  }
-
-  async function prepareMediaUpload(file) {
-    const mimeType = videoMimeType(file);
-    if (!mimeType) {
-      const image = await convertToWebp(file);
-      return { ...image, kind: "image" };
-    }
-    if (!file.size) throw new Error(`${file.name || "檔案"} 不是有效的影片檔。`);
-    if (file.size > MAX_VIDEO_BYTES) throw new Error(`${file.name} 超過 50 MB。`);
-    const video = await readVideoMetadata(file, mimeType);
-    return { ...video, originalName: file.name || "video", kind: "video" };
-  }
-
-  function mediaInputAccept(kind) {
-    if (kind === "video") return "video/mp4,video/webm,.mp4,.webm";
-    if (kind === "image") return "image/jpeg,image/png,image/webp,image/gif,image/bmp,image/avif,.jpg,.jpeg,.png,.webp,.gif,.bmp,.avif";
-    return "image/jpeg,image/png,image/webp,image/gif,image/bmp,image/avif,video/mp4,video/webm,.jpg,.jpeg,.png,.webp,.gif,.bmp,.avif,.mp4,.webm";
-  }
-
   function setUploadedUrls(target, urls, multiple) {
     if (!target || !urls.length) return;
     const field = $(`[name="${target}"]`);
@@ -969,34 +908,27 @@
     } else {
       field.value = urls.at(-1);
     }
-    const preview = $(`[data-media-preview="${target}"]`);
-    if (preview) preview.innerHTML = mediaPreview(multiple ? field.value.split(/\n/).filter(Boolean) : field.value);
+    const preview = $(`[data-image-preview="${target}"]`);
+    if (preview) preview.innerHTML = imagePreview(multiple ? field.value.split(/\n/).filter(Boolean) : field.value);
     field.dispatchEvent(new Event("input", { bubbles: true }));
   }
 
   function renderMediaPicker() {
     const query = String($("#media-picker-search").value || "").trim().toLocaleLowerCase();
-    const mediaLabel = state.pickerKind === "video" ? "影片" : "圖片";
-    const rows = state.pickerRows.filter((row) => {
-      if (state.pickerKind === "video" ? !isVideoMedia(row) : isVideoMedia(row)) return false;
-      return !query || String(row.original_name || "").toLocaleLowerCase().includes(query);
-    });
+    const rows = state.pickerRows.filter((row) => !query || String(row.original_name || "").toLocaleLowerCase().includes(query));
     $("#media-picker-grid").innerHTML = rows.length
       ? rows.map((row) => {
           const selected = state.pickerSelected.has(row.public_url);
-          const preview = isVideoMedia(row)
-            ? `<video src="${esc(row.public_url)}" muted preload="metadata" playsinline></video>`
-            : `<img src="${esc(row.public_url)}" alt="" loading="lazy" />`;
           return `
             <button class="media-picker-card ${selected ? "selected" : ""}" type="button" data-action="select-existing-media" data-media-id="${esc(row.id)}" aria-pressed="${selected}">
-              ${preview}
-              <span><strong>${esc(row.original_name || mediaLabel)}</strong><small>${mediaLabel} · ${Number(row.width) || 0} × ${Number(row.height) || 0}px · ${formatBytes(row.size_bytes)}</small></span>
+              <img src="${esc(row.public_url)}" alt="" loading="lazy" />
+              <span><strong>${esc(row.original_name || "圖片")}</strong><small>圖片 · ${Number(row.width) || 0} × ${Number(row.height) || 0}px · ${formatBytes(row.size_bytes)}</small></span>
             </button>`;
         }).join("")
-      : `<p class="media-picker-empty">找不到符合的${mediaLabel}。</p>`;
+      : '<p class="media-picker-empty">找不到符合的圖片。</p>';
     $("#media-picker-count").textContent = state.pickerSelected.size
-      ? `已選擇 ${state.pickerSelected.size} ${mediaLabel}`
-      : `尚未選擇${mediaLabel}`;
+      ? `已選擇 ${state.pickerSelected.size} 張圖片`
+      : "尚未選擇圖片";
   }
 
   function closeMediaPicker() {
@@ -1006,23 +938,19 @@
     state.pickerSelected = new Set();
     state.uploadTarget = "";
     state.uploadMultiple = true;
-    state.uploadKind = "any";
-    state.pickerKind = "image";
     $("#media-picker-search").value = "";
   }
 
-  async function openMediaPicker(target, multiple, kind = "image") {
+  async function openMediaPicker(target, multiple) {
     state.uploadTarget = target;
     state.uploadMultiple = multiple;
-    state.pickerKind = kind === "video" ? "video" : "image";
     state.pickerRows = [];
     state.pickerSelected = new Set();
-    const mediaLabel = state.pickerKind === "video" ? "影片" : "圖片";
-    $("#media-picker-title").textContent = `從媒體庫選擇${mediaLabel}`;
-    $("#media-picker-search").placeholder = `輸入${mediaLabel}名稱…`;
-    $("#media-picker-grid").innerHTML = `<p>正在讀取${mediaLabel}庫…</p>`;
-    $("#media-picker-count").textContent = `尚未選擇${mediaLabel}`;
-    $("#apply-media-selection").textContent = `加入已選${mediaLabel}`;
+    $("#media-picker-title").textContent = "從圖片庫選擇";
+    $("#media-picker-search").placeholder = "輸入圖片名稱…";
+    $("#media-picker-grid").innerHTML = "<p>正在讀取圖片庫…</p>";
+    $("#media-picker-count").textContent = "尚未選擇圖片";
+    $("#apply-media-selection").textContent = "加入已選圖片";
     $("#apply-media-selection").hidden = !multiple;
     $("#media-picker").showModal();
     try {
@@ -1030,8 +958,8 @@
       state.pickerRows = await window.HLSContentService.getAdminRows(TABLES.media, token);
       renderMediaPicker();
     } catch (error) {
-      $("#media-picker-grid").innerHTML = `<p class="media-picker-empty error">無法讀取媒體庫：${esc(error.message)}</p>`;
-      showStatus(`無法讀取媒體庫：${error.message}`, true);
+      $("#media-picker-grid").innerHTML = `<p class="media-picker-empty error">無法讀取圖片庫：${esc(error.message)}</p>`;
+      showStatus(`無法讀取圖片庫：${error.message}`, true);
     }
   }
 
@@ -1039,10 +967,9 @@
     const row = state.pickerRows.find((item) => String(item.id) === String(mediaId));
     if (!row) return;
     if (!state.uploadMultiple) {
-      const mediaLabel = state.pickerKind === "video" ? "影片" : "圖片";
       setUploadedUrls(state.uploadTarget, [row.public_url], false);
       closeMediaPicker();
-      showStatus(`已從媒體庫選用${mediaLabel}；請按「儲存內容」完成套用。`);
+      showStatus("已從圖片庫選用圖片；請按「儲存內容」完成套用。");
       return;
     }
     if (state.pickerSelected.has(row.public_url)) state.pickerSelected.delete(row.public_url);
@@ -1052,23 +979,21 @@
 
   function applyMediaSelection() {
     const urls = [...state.pickerSelected];
-    const mediaLabel = state.pickerKind === "video" ? "影片" : "圖片";
     if (!urls.length) {
-      showStatus(`請至少選擇一${mediaLabel === "影片" ? "部影片" : "張圖片"}。`, true);
+      showStatus("請至少選擇一張圖片。", true);
       return;
     }
     setUploadedUrls(state.uploadTarget, urls, true);
     closeMediaPicker();
-    showStatus(`已從媒體庫加入 ${urls.length} ${mediaLabel === "影片" ? "部影片" : "張圖片"}；請按「儲存內容」完成套用。`);
+    showStatus(`已從圖片庫加入 ${urls.length} 張圖片；請按「儲存內容」完成套用。`);
   }
 
-  async function uploadMediaFiles(fileList) {
+  async function uploadImageFiles(fileList) {
     const files = Array.from(fileList || []);
     if (!files.length) return;
-    const hasVideo = state.uploadKind === "video" || files.some((file) => Boolean(videoMimeType(file)));
-    const limit = state.uploadMultiple ? (hasVideo ? MAX_VIDEO_UPLOADS : 10) : 1;
+    const limit = state.uploadMultiple ? 10 : 1;
     const selected = files.slice(0, limit);
-    if (files.length > selected.length) showStatus(`一次最多處理 ${limit} ${hasVideo ? "部影片" : "張圖片"}。`);
+    if (files.length > selected.length) showStatus(`一次最多處理 ${limit} 張圖片。`);
     const input = $("#media-upload-input");
     input.disabled = true;
     const uploadedUrls = [];
@@ -1078,10 +1003,7 @@
       for (let index = 0; index < selected.length; index += 1) {
         const file = selected[index];
         showStatus(`正在檢查並上傳 ${index + 1}/${selected.length}：${file.name}`);
-        const converted = await prepareMediaUpload(file);
-        if (state.uploadKind !== "any" && converted.kind !== state.uploadKind) {
-          throw new Error(state.uploadKind === "video" ? "此欄位只接受 MP4 或 WebM 影片。" : "此欄位只接受圖片。");
-        }
+        const converted = await convertToWebp(file);
         const duplicate = await window.HLSContentService.findDuplicateMedia(
           converted.originalName,
           file.size,
@@ -1112,21 +1034,20 @@
       setUploadedUrls(state.uploadTarget, uploadedUrls, state.uploadMultiple);
       if (state.type === "media") await loadRows();
       if (skippedDuplicates.length) {
-        const message = `${uploadedUrls.length} 個媒體已上傳；${skippedDuplicates.length} 個因檔名與檔案大小相同而略過：${skippedDuplicates.join("、")}。可使用「從媒體庫選擇」。`;
+        const message = `${uploadedUrls.length} 張圖片已上傳；${skippedDuplicates.length} 張因檔名與檔案大小相同而略過：${skippedDuplicates.join("、")}。可使用「從圖片庫選擇」。`;
         showStatus(message, uploadedUrls.length === 0);
         window.alert(message);
       } else {
-        showStatus(`${uploadedUrls.length} 個媒體已存入媒體庫。圖片會自動轉成 WebP，影片保留 MP4 或 WebM。`);
+        showStatus(`${uploadedUrls.length} 張圖片已存入圖片庫，並已自動轉成 WebP。`);
       }
     } catch (error) {
       if (state.type === "media") await loadRows();
-      showStatus(`媒體處理失敗：${error.message}`, true);
+      showStatus(`圖片處理失敗：${error.message}`, true);
     } finally {
       input.disabled = false;
       input.value = "";
       state.uploadTarget = "";
       state.uploadMultiple = true;
-      state.uploadKind = "any";
     }
   }
 
@@ -1150,10 +1071,10 @@
     if (!media) return;
     if (!window.confirm(`確定永久刪除「${media.original_name}」嗎？此動作無法復原。`)) return;
     try {
-      showStatus("正在檢查並刪除媒體…");
+      showStatus("正在檢查並刪除圖片…");
       await window.HLSContentService.deleteMedia(media, await activeAccessToken());
       await loadRows();
-      showStatus("媒體已從 Supabase Storage 與媒體紀錄中刪除。 ");
+      showStatus("圖片已從 Supabase Storage 與圖片紀錄中刪除。 ");
     } catch (error) {
       showStatus(`無法刪除：${error.message}`, true);
     }
@@ -1162,7 +1083,7 @@
   function updateNewButton() {
     const button = $("#new-record");
     button.hidden = state.type === "inquiries";
-    button.textContent = state.type === "media" ? "上傳媒體" : `新增${typeLabels[state.type]}`;
+    button.textContent = state.type === "media" ? "上傳圖片" : `新增${typeLabels[state.type]}`;
     $("#gpt-transfer").hidden = state.type === "inquiries" || state.type === "media";
   }
 
@@ -1215,8 +1136,7 @@
     if (existingMediaButton) {
       openMediaPicker(
         existingMediaButton.dataset.uploadTarget || "",
-        existingMediaButton.dataset.uploadMultiple !== "false",
-        existingMediaButton.dataset.mediaKind || "image"
+        existingMediaButton.dataset.uploadMultiple !== "false"
       );
       return;
     }
@@ -1237,17 +1157,15 @@
     if (uploadButton) {
       state.uploadTarget = uploadButton.dataset.uploadTarget || "";
       state.uploadMultiple = uploadButton.dataset.uploadMultiple !== "false";
-      state.uploadKind = uploadButton.dataset.mediaKind || "any";
       const input = $("#media-upload-input");
       input.multiple = state.uploadMultiple;
-      input.accept = mediaInputAccept(state.uploadKind);
       input.click();
       return;
     }
     const copyMediaButton = event.target.closest('[data-action="copy-media-url"]');
     if (copyMediaButton) {
       copyText(copyMediaButton.dataset.mediaUrl || "")
-        .then(() => showStatus("媒體網址已複製。"))
+        .then(() => showStatus("圖片網址已複製。"))
         .catch((error) => showStatus(`無法複製網址：${error.message}`, true));
       return;
     }
@@ -1271,10 +1189,8 @@
       if (state.type === "media") {
         state.uploadTarget = "";
         state.uploadMultiple = true;
-        state.uploadKind = "any";
         const input = $("#media-upload-input");
         input.multiple = true;
-        input.accept = mediaInputAccept("any");
         input.click();
         return;
       }
@@ -1302,15 +1218,13 @@
     }
   });
 
-  $("#media-upload-input").addEventListener("change", (event) => uploadMediaFiles(event.target.files));
+  $("#media-upload-input").addEventListener("change", (event) => uploadImageFiles(event.target.files));
   $("#media-picker-search").addEventListener("input", renderMediaPicker);
   $("#media-picker").addEventListener("close", () => {
     state.pickerRows = [];
     state.pickerSelected = new Set();
     state.uploadTarget = "";
     state.uploadMultiple = true;
-    state.uploadKind = "any";
-    state.pickerKind = "image";
     $("#media-picker-search").value = "";
   });
   document.addEventListener("dragover", (event) => {
@@ -1331,8 +1245,7 @@
     mediaDropZone.classList.remove("dragover");
     state.uploadTarget = "";
     state.uploadMultiple = true;
-    state.uploadKind = "any";
-    uploadMediaFiles(event.dataTransfer?.files);
+    uploadImageFiles(event.dataTransfer?.files);
   });
 
   document.addEventListener("submit", async (event) => {

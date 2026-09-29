@@ -13,7 +13,7 @@ python -m http.server 4173 --bind 127.0.0.1
 ## 內容與程式結構
 
 - `content.js`：未連線 Supabase 時使用的內建內容與多語資料
-- `content-service.js`：Supabase 讀寫、登入、圖片與影片儲存及內建內容回退
+- `content-service.js`：Supabase 讀寫、登入、圖片儲存及內建內容回退
 - `supabase-config.js`：Supabase Project URL 與公開金鑰
 - `admin.html`、`admin.js`、`admin.css`：內容管理頁面
 - `scripts/build-portable-admin.js`：產生可直接雙擊的單檔管理工具
@@ -22,11 +22,13 @@ python -m http.server 4173 --bind 127.0.0.1
 - `public/assets/legacy/`：舊站原始素材
 - `public/assets/optimized/`：網站使用的 WebP 圖片
 
-Supabase 的完整啟用步驟請見 [docs/supabase-setup.md](docs/supabase-setup.md)。未設定或暫時無法連線時，前台會自動使用 `content.js`，不會顯示空白網站。
+Supabase 的完整啟用步驟請見 [docs/supabase-setup.md](docs/supabase-setup.md)，從共用資料庫移轉至獨立專案請見 [docs/new-supabase-migration.md](docs/new-supabase-migration.md)。未設定或暫時無法連線時，前台會自動使用 `content.js`，不會顯示空白網站。
 
 ## 媒體管理
 
-管理頁的「媒體庫」可批次拖曳一般圖片、MP4 或 WebM；產品、分類與據點編輯表單可直接上傳或從媒體庫搜尋既有檔案。瀏覽器會先將圖片最長邊縮至 2400px 並轉成 WebP；影片保留 MP4 或 WebM 格式，再把檔案存入公開的 Supabase Storage bucket `hls-site-assets`。產品頁會使用原生播放器顯示已發布產品的影片。`hls_media` 資料表保存媒體索引與公開網址。原始檔名及原始檔案大小都相同時會略過重複上傳，同批其他媒體不受影響；仍被內容引用的媒體不允許刪除。建議影片使用 H.264/AAC 編碼的 MP4，以取得最廣泛的相容性。
+管理頁的「圖片庫」可批次拖曳一般圖片，產品、分類與據點編輯表單可直接上傳或從圖片庫搜尋既有檔案。瀏覽器會先將圖片最長邊縮至 2400px 並轉成 WebP，再存入公開的 Supabase Storage bucket `hls-site-assets`；`hls_media` 保存圖片索引與公開網址。原始檔名及原始檔案大小都相同時會略過重複上傳，同批其他圖片不受影響；仍被內容引用的圖片不允許刪除。
+
+產品影片先上傳至 YouTube，再於後台貼上分享網址；前台使用 YouTube 嵌入播放器，因此影片不佔用 Supabase Storage 容量。
 
 ## 發布
 
