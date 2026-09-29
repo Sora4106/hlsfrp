@@ -15,6 +15,7 @@
   const CONTENT_FORMAT = "hls-content-v1";
   const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
   const MAX_IMPORT_RECORDS = 100;
+  const LEGACY_PLACEHOLDER_IMAGE = "public/assets/optimized/example.webp";
   const typeLabels = {
     news: "消息",
     products: "產品",
@@ -269,26 +270,37 @@
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
-  function imagePreview(urls) {
-    const items = (Array.isArray(urls) ? urls : [urls]).filter(Boolean);
+  function imageUrls(value) {
+    return (Array.isArray(value) ? value : [value])
+      .map((item) => String(item || "").trim())
+      .filter((item) => item && item !== LEGACY_PLACEHOLDER_IMAGE);
+  }
+
+  function imagePreview(urls, target = "") {
+    const items = imageUrls(urls);
     if (!items.length) return '<p class="image-preview-empty">上傳後會在這裡顯示預覽。</p>';
-    return items.map((url) => `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(url)}" alt="" loading="lazy" /></a>`).join("");
+    return items.map((url, index) => `
+      <span class="image-preview-item">
+        <a href="${esc(url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(url)}" alt="" loading="lazy" /></a>
+        ${target ? `<button class="image-preview-remove" type="button" data-action="remove-image-value" data-image-target="${esc(target)}" data-image-index="${index}" aria-label="從內容中移除這張圖片" title="從內容中移除">×</button>` : ""}
+      </span>`).join("");
   }
 
   function imagePickerField(name, label, value, multiple = false, required = false) {
-    const urls = multiple ? (Array.isArray(value) ? value : []) : [value || ""];
+    const urls = imageUrls(multiple ? value : [value]);
     const control = multiple
       ? `<textarea name="${name}" maxlength="12000" ${required ? "required" : ""}>${esc(urls.join("\n"))}</textarea>`
-      : `<input name="${name}" value="${esc(value || "")}" maxlength="1000" ${required ? "required" : ""} />`;
+      : `<input name="${name}" value="${esc(urls[0] || "")}" maxlength="1000" ${required ? "required" : ""} />`;
     return `
       <div class="image-field wide">
         <label>${esc(label)}${control}</label>
         <div class="image-field-actions">
           <button class="secondary-button" type="button" data-action="upload-media" data-upload-target="${name}" data-upload-multiple="${multiple}">選擇圖片並轉成 WebP</button>
           <button class="secondary-button" type="button" data-action="choose-existing-media" data-upload-target="${name}" data-upload-multiple="${multiple}">從圖片庫選擇</button>
-          <span>${multiple ? "可選多張；每行會自動填入一個圖片網址。" : "新圖片會取代欄位中的網址。"}</span>
+          <span>${multiple ? "可選多張；每張右上角 × 可從本產品移除。" : "新圖片會取代欄位中的網址；右上角 × 可清除。"}</span>
         </div>
-        <div class="image-preview" data-image-preview="${name}">${imagePreview(urls)}</div>
+        <div class="image-preview" data-image-preview="${name}">${imagePreview(urls, name)}</div>
+        <p class="form-note">右上角 × 只會從目前內容移除圖片；要永久刪除已上傳檔案，請到「圖片庫」選取後按「刪除圖片」。</p>
       </div>`;
   }
 
@@ -479,8 +491,8 @@
       features: localizedArrayFromForm(form, "features"),
       applications: localizedFromForm(form, "applications"),
       specifications: localizedFromForm(form, "specifications"),
-      images: urlLines(form, "images"),
-      spec_images: urlLines(form, "spec_images"),
+      images: imageUrls(urlLines(form, "images")),
+      spec_images: imageUrls(urlLines(form, "spec_images")),
       videos: youtubeLines(form),
       sort_order,
       published,
@@ -595,7 +607,7 @@
       features: [words],
       applications: words,
       specifications: words,
-      images: ["public/assets/optimized/example.webp"],
+      images: ["public/assets/optimized/IMG_5058.webp"],
       spec_images: [],
       videos: [],
       sort_order: state.rows.length,
@@ -605,7 +617,7 @@
       id: "new-category-id",
       name: words,
       description: words,
-      image: "public/assets/optimized/example.webp",
+      image: "public/assets/optimized/11_n090.webp",
       sort_order: state.rows.length,
       published: false,
     };
@@ -614,7 +626,7 @@
       region: words,
       company: words,
       address: words,
-      image: "public/assets/optimized/example.webp",
+      image: "public/assets/optimized/11_n090.webp",
       phone: "",
       fax: "",
       email: "",
@@ -705,13 +717,15 @@
 
   function normalizeAssetList(value, field, required = false) {
     if (!Array.isArray(value)) throw new Error(`${field} 必須是網址陣列。`);
-    if (required && !value.length) throw new Error(`${field} 至少需要一張圖片。`);
     if (value.length > 50) throw new Error(`${field} 最多 50 張圖片。`);
-    return value.map((item, index) => {
+    const paths = value.map((item, index) => {
       const path = requireString(item, `${field}[${index}]`, 1000);
       if (!/^(public\/assets\/|https:\/\/)/i.test(path)) throw new Error(`${field}[${index}] 必須是 public/assets 路徑或 https 網址。`);
       return path;
     });
+    const result = imageUrls(paths);
+    if (required && !result.length) throw new Error(`${field} 至少需要一張圖片。`);
+    return result;
   }
 
   function normalizeVideoList(value) {
@@ -898,19 +912,41 @@
     return { blob, width, height, originalName: file.name || "image" };
   }
 
+  function renderImagePreview(target) {
+    const field = $(`[name="${target}"]`);
+    if (!field) return;
+    const preview = $(`[data-image-preview="${target}"]`);
+    if (preview) preview.innerHTML = imagePreview(field.value.split(/\n/), target);
+  }
+
+  function setImageFieldValue(target, urls) {
+    const field = $(`[name="${target}"]`);
+    if (!field) return;
+    const values = imageUrls(urls);
+    field.value = field.tagName === "TEXTAREA" ? values.join("\n") : (values.at(-1) || "");
+    renderImagePreview(target);
+    field.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
   function setUploadedUrls(target, urls, multiple) {
     if (!target || !urls.length) return;
     const field = $(`[name="${target}"]`);
     if (!field) return;
     if (multiple) {
-      const existing = field.value.split(/\n/).map((value) => value.trim()).filter(Boolean);
-      field.value = [...new Set([...existing, ...urls])].join("\n");
+      setImageFieldValue(target, [...new Set([...imageUrls(field.value.split(/\n/)), ...imageUrls(urls)])]);
     } else {
-      field.value = urls.at(-1);
+      setImageFieldValue(target, imageUrls(urls).slice(-1));
     }
-    const preview = $(`[data-image-preview="${target}"]`);
-    if (preview) preview.innerHTML = imagePreview(multiple ? field.value.split(/\n/).filter(Boolean) : field.value);
-    field.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
+  function removeImageValue(target, index) {
+    const field = $(`[name="${target}"]`);
+    if (!field) return;
+    const urls = imageUrls(field.value.split(/\n/));
+    if (!Number.isInteger(index) || index < 0 || index >= urls.length) return;
+    urls.splice(index, 1);
+    setImageFieldValue(target, urls);
+    showStatus("圖片已從目前內容移除；按「儲存內容」後才會套用到網站。");
   }
 
   function renderMediaPicker() {
@@ -988,10 +1024,10 @@
     showStatus(`已從圖片庫加入 ${urls.length} 張圖片；請按「儲存內容」完成套用。`);
   }
 
-  async function uploadImageFiles(fileList) {
+  async function uploadImageFiles(fileList, target = "", multiple = true) {
     const files = Array.from(fileList || []);
     if (!files.length) return;
-    const limit = state.uploadMultiple ? 10 : 1;
+    const limit = multiple ? 10 : 1;
     const selected = files.slice(0, limit);
     if (files.length > selected.length) showStatus(`一次最多處理 ${limit} 張圖片。`);
     const input = $("#media-upload-input");
@@ -1031,7 +1067,7 @@
           throw error;
         }
       }
-      setUploadedUrls(state.uploadTarget, uploadedUrls, state.uploadMultiple);
+      setUploadedUrls(target, uploadedUrls, multiple);
       if (state.type === "media") await loadRows();
       if (skippedDuplicates.length) {
         const message = `${uploadedUrls.length} 張圖片已上傳；${skippedDuplicates.length} 張因檔名與檔案大小相同而略過：${skippedDuplicates.join("、")}。可使用「從圖片庫選擇」。`;
@@ -1046,8 +1082,8 @@
     } finally {
       input.disabled = false;
       input.value = "";
-      state.uploadTarget = "";
-      state.uploadMultiple = true;
+      delete input.dataset.uploadTarget;
+      delete input.dataset.uploadMultiple;
     }
   }
 
@@ -1153,12 +1189,22 @@
       applyMediaSelection();
       return;
     }
+    const removeImageButton = event.target.closest('[data-action="remove-image-value"]');
+    if (removeImageButton) {
+      removeImageValue(
+        removeImageButton.dataset.imageTarget || "",
+        Number(removeImageButton.dataset.imageIndex)
+      );
+      return;
+    }
     const uploadButton = event.target.closest('[data-action="upload-media"]');
     if (uploadButton) {
-      state.uploadTarget = uploadButton.dataset.uploadTarget || "";
-      state.uploadMultiple = uploadButton.dataset.uploadMultiple !== "false";
+      const target = uploadButton.dataset.uploadTarget || "";
+      const multiple = uploadButton.dataset.uploadMultiple !== "false";
       const input = $("#media-upload-input");
-      input.multiple = state.uploadMultiple;
+      input.multiple = multiple;
+      input.dataset.uploadTarget = target;
+      input.dataset.uploadMultiple = String(multiple);
       input.click();
       return;
     }
@@ -1187,10 +1233,10 @@
     }
     if (event.target.closest("#new-record")) {
       if (state.type === "media") {
-        state.uploadTarget = "";
-        state.uploadMultiple = true;
         const input = $("#media-upload-input");
         input.multiple = true;
+        input.dataset.uploadTarget = "";
+        input.dataset.uploadMultiple = "true";
         input.click();
         return;
       }
@@ -1218,7 +1264,13 @@
     }
   });
 
-  $("#media-upload-input").addEventListener("change", (event) => uploadImageFiles(event.target.files));
+  $("#media-upload-input").addEventListener("change", (event) => {
+    uploadImageFiles(
+      event.target.files,
+      event.target.dataset.uploadTarget || "",
+      event.target.dataset.uploadMultiple !== "false"
+    );
+  });
   $("#media-picker-search").addEventListener("input", renderMediaPicker);
   $("#media-picker").addEventListener("close", () => {
     state.pickerRows = [];
@@ -1243,9 +1295,7 @@
     if (!mediaDropZone) return;
     event.preventDefault();
     mediaDropZone.classList.remove("dragover");
-    state.uploadTarget = "";
-    state.uploadMultiple = true;
-    uploadImageFiles(event.dataTransfer?.files);
+    uploadImageFiles(event.dataTransfer?.files, "", true);
   });
 
   document.addEventListener("submit", async (event) => {

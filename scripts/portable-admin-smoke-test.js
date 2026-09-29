@@ -15,7 +15,7 @@ assert.doesNotMatch(html, /<link[^>]+rel=["']stylesheet/i, "portable admin shoul
 assert.match(html, /hls_media/);
 assert.match(html, /data-media-drop/);
 assert.match(html, /image\/webp/);
-assert.match(html, /ADMIN 1\.5\.0/);
+assert.match(html, /ADMIN 1\.6\.0/);
 assert.match(html, /id="admin-activity"/);
 assert.match(html, /data-action="save-content"/);
 assert.match(html, /id="editor-form" class="editor-form" novalidate/);
@@ -25,5 +25,6 @@ assert.match(html, /data-action="choose-existing-media"/);
 assert.match(html, /findDuplicateMedia/);
 assert.doesNotMatch(html, /video\/mp4/);
 assert.match(html, /YouTube 網址/);
+assert.match(html, /remove-image-value/);
 
 console.log("Portable admin static check passed.");

@@ -6,15 +6,16 @@ const path = require("node:path");
 const vm = require("node:vm");
 
 const source = fs.readFileSync(path.resolve(__dirname, "..", "admin.js"), "utf8");
-const start = source.indexOf("  function youtubeVideoId");
+const start = source.indexOf("  function imageUrls");
 const end = source.indexOf("\n  async function saveEditor", start);
-assert.ok(start >= 0 && end > start, "video URL and form serialization functions were not found");
+assert.ok(start >= 0 && end > start, "image, video URL and form serialization functions were not found");
 
 const context = { FormData, URL };
 const rowFromForm = vm.runInNewContext(`
   (function () {
     const state = { type: "products", rows: [], selectedIndex: -1 };
     const today = () => "2026-09-11";
+    const LEGACY_PLACEHOLDER_IMAGE = "public/assets/optimized/example.webp";
     const localized = (zh = "", en = "", th = "") => ({ zh, "zh-CN": zh, en, th });
     ${source.slice(start, end)}
     return rowFromForm;
@@ -26,7 +27,7 @@ function productForm(published) {
   form.set("id", "sensors");
   form.set("category_id", "farming");
   form.set("name_zh", "智慧環境監測感測器");
-  form.set("images", "https://example.supabase.co/storage/v1/object/public/hls-site-assets/products/sensor.webp");
+  form.set("images", "public/assets/optimized/example.webp\nhttps://example.supabase.co/storage/v1/object/public/hls-site-assets/products/sensor.webp");
   form.set("videos", "https://youtu.be/M7lc1UVf-VE");
   form.set("sort_order", "12");
   if (published) form.set("published", "on");
@@ -40,6 +41,13 @@ assert.deepEqual(
   ["https://www.youtube.com/watch?v=M7lc1UVf-VE"],
   "YouTube product video URLs must be canonicalized and saved with the product"
 );
+assert.deepEqual(
+  [...rowFromForm(productForm(true)).images],
+  ["https://example.supabase.co/storage/v1/object/public/hls-site-assets/products/sensor.webp"],
+  "legacy placeholder images must not be saved back to a product"
+);
+assert.match(source, /function removeImageValue\(target, index\)/, "image removal handler is required");
+assert.match(source, /uploadImageFiles\(fileList, target = "", multiple = true\)/, "uploads must retain their originating image field");
 
 async function testSessionRefresh() {
   const refreshStart = source.indexOf("  function normalizeSession");
