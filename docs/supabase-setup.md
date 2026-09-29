@@ -17,14 +17,14 @@
 
 圖片重複判斷使用「原始檔名 + 原始檔案大小」。兩者都相同才會略過重複上傳；同名但大小不同的圖片仍可加入。
 
-## 2. 建立圖片儲存空間
+## 2. 圖片儲存空間
 
-到 Supabase Dashboard 的 **Storage** 建立一個 bucket：
+執行 `schema.sql` 時會自動建立公開的 `hls-site-assets` bucket，並設定為：
 
-- Name：`hls-site-assets`
-- Public bucket：開啟
-- Restrict file size：開啟，設為 `10 MB`
-- Restrict MIME types：開啟，只填入 `image/webp`
+- File size limit：`10 MB`
+- Allowed MIME types：`image/webp`
+
+之後可在 Supabase Dashboard 的 **Storage** 查看這個 bucket；不需要手動建立。
 
 後台接受 JPG、PNG、WebP、GIF、BMP、AVIF 等一般圖片；會先在使用者瀏覽器轉成最長邊 2400px 的 WebP，再上傳到 `hls-site-assets`。圖片本體放在 Storage，`hls_media` 只保存圖片索引、公開網址、尺寸與檔案資訊。
 

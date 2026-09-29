@@ -3,6 +3,14 @@
 
 create extension if not exists pgcrypto;
 
+-- The website only stores WebP images. Product videos use YouTube URLs.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('hls-site-assets', 'hls-site-assets', true, 10485760, array['image/webp']::text[])
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
 create table if not exists public.hls_admins (
   user_id uuid primary key references auth.users(id) on delete cascade,
   created_at timestamptz not null default now()
