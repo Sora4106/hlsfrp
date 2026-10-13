@@ -73,7 +73,27 @@ Publishable／anon key 是前端可公開的金鑰，實際存取邊界由 `sche
 
 如果 Supabase 暫時無法連線，前台仍會使用 `content.js` 的內建內容；管理頁會顯示連線錯誤，不會將秘密權限放進瀏覽器端。
 
-## 7. 私下提供管理工具給同事
+## 7. 可選：Supabase 內部保活排程
+
+若使用 Free 方案，且想先嘗試用專案內部活動避免閒置暫停，請在 SQL Editor 執行 `supabase/enable-internal-keepalive.sql`。
+
+它會：
+
+- 每日台灣時間 23:20 檢查一次。
+- 距離上次保活滿 6 天時，執行一次官網內容讀取並記錄時間。
+- 在 `hls_keepalive_runs` 保留實際執行紀錄；每 6 天一筆，資料量極小。
+
+執行後可用以下 SQL 檢查：
+
+```sql
+select id, ran_at, source
+from public.hls_keepalive_runs
+order by ran_at desc;
+```
+
+這是嘗試性的內部保活；專案若已經被暫停，內部 Cron 無法自行恢復。若日後仍被暫停，再改用外部排程服務即可。
+
+## 8. 私下提供管理工具給同事
 
 在專案資料夾執行：
 
